@@ -9,12 +9,13 @@ import AppNavigator from '../navigation/AppNavigator';
 
 
 const firebaseConfig = {
-    apiKey: 'AIzaSyDPMgqcXtH8YI7VFmV8jjgY6KyUvN6TMy0',
-    authDomain: 'new-barberia-app.firebaseapp.com',
-    projectId: 'new-barberia-app',
-    storageBucket: 'new-barberia-app.appspot.com',
-    messagingSenderId: '438437046396',
-    appId: '1:438437046396:web:someappid',
+    apiKey: "AIzaSyD8p3M6xhMZHY6wXazA-KWaiEAbwzxXm0E",
+    authDomain: "fir-app-barbers.firebaseapp.com",
+    projectId: "fir-app-barbers",
+    storageBucket: "fir-app-barbers.appspot.com",
+    messagingSenderId: "402857061695",
+    appId: "1:402857061695:web:f388c39a2906b13f26778a",
+    measurementId: "G-MQHQJK10DZ"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -22,3 +23,5 @@ const auth = getAuth(app);
 const firestore = getFirestore(app);
 
 export { app, auth, firestore };
+
+
