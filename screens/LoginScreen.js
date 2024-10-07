@@ -16,7 +16,7 @@ const LoginScreen = ({ navigation }) => {
     const handleLogin = async () => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            navigation.navigate('HomeScreenClient');
+            navigation.navigate('ClientHomeScreen');
         } catch (error) {
             setError(error.message);
         }
@@ -32,8 +32,8 @@ const LoginScreen = ({ navigation }) => {
     };
 
     return (
-        <ImageBackground 
-            source={require('../assets/background.jpg')} 
+        <ImageBackground
+            source={require('../assets/background.jpg')}
             style={styles.background}
         >
             <View style={styles.container}>
@@ -54,9 +54,9 @@ const LoginScreen = ({ navigation }) => {
                 />
                 {error ? <Text style={styles.error}>{error}</Text> : null}
 
-                <Button 
-                    mode="contained" 
-                    onPress={handleLogin} 
+                <Button
+                    mode="contained"
+                    onPress={handleLogin}
                     style={styles.button}
                     labelStyle={styles.buttonLabel}
                 >
@@ -78,22 +78,22 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.separator}>ó</Text>
 
                 <View style={styles.socialContainer}>
-                    <Button 
-                        mode="contained" 
-                        style={styles.socialButton} 
+                    <Button
+                        mode="contained"
+                        style={styles.socialButton}
                         labelStyle={styles.buttonLabel}
                         icon={() => <Icon name="facebook" size={20} color={colors.white} />} // Icono de Facebook
                     />
-                    <Button 
-                        mode="contained" 
-                        style={styles.socialButton} 
+                    <Button
+                        mode="contained"
+                        style={styles.socialButton}
                         labelStyle={styles.buttonLabel}
                         icon={() => <Icon name="google" size={20} color={colors.white} />} // Icono de Google
                     />
                     {Platform.OS === 'ios' && (
-                        <Button 
-                            mode="contained" 
-                            style={styles.socialButton} 
+                        <Button
+                            mode="contained"
+                            style={styles.socialButton}
                             labelStyle={styles.buttonLabel}
                             icon={() => <Icon name="apple" size={20} color={colors.white} />} // Icono de Apple
                         />
