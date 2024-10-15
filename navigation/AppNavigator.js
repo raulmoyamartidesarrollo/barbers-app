@@ -1,41 +1,44 @@
-import * as React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+// appNavigator.js
+import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import HomeScreen from '../screens/HomeScreen';
-import LoginScreen from '../screens/LoginScreen';
-import AdminScreen from '../screens/AdminScreen';
-import { firebase } from '../services/Firebase';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import HomeScreenClient from '../screens/HomeScreenClient';
+import AdminHomeScreen from '../screens/AdminHomeScreen';
+import LoginScreen from '../screens/LoginScreen'; // Asegúrate de que esta importación sea correcta
+import CreateAccountClientScreen from '../screens/CreateAccountClientScreen';
+import ClientMyAccountScreen from '../screens/ClientMyAccountScreen';
+import { useUser } from '../services/UserContext';
 
 const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
 
+// BottomTabNavigator para clientes
+function ClientTabNavigator() {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="HomeScreenClient" component={HomeScreenClient} />
+    </Tab.Navigator>
+  );
+}
+
+// StackNavigator principal
 export default function AppNavigator() {
-  const [initializing, setInitializing] = React.useState(true);
-  const [user, setUser] = React.useState(null);
-
-  React.useEffect(() => {
-    const subscriber = firebase.auth().onAuthStateChanged(onAuthStateChanged);
-    return subscriber; // unsubscribe on unmount
-  }, []);
-
-  function onAuthStateChanged(user) {
-    setUser(user);
-    if (initializing) setInitializing(false);
-  }
-
-  if (initializing) return null;
+  const { userId } = useUser();
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName={user ? "Home" : "Login"}>
-        {user ? (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Admin" component={AdminScreen} />
-          </>
-        ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {userId ? (        
+        <>
+          <Stack.Screen name="ClientTabs" component={ClientTabNavigator} />
+          <Stack.Screen name="AdminHomeScreen" component={AdminHomeScreen} />
+          <Stack.Screen name="ClientMyAccountScreen" component={ClientMyAccountScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="LoginScreen" component={LoginScreen} />
+          <Stack.Screen name="CreateAccountClientScreen" component={CreateAccountClientScreen} />
+        </>
+      )}
+    </Stack.Navigator>
   );
 }
