@@ -107,6 +107,12 @@ export default function HomeScreenClient() {
                                 {lastBooking.status}
                             </Text>
                         </Text>
+                        {lastBooking.status === 'pendiente' && (
+                            <TouchableOpacity style={styles.editOption} onPress={() => { /* Lógica para editar cita */ }}>
+                                <Icon name="pencil" size={20} color="white" />
+                                <Text style={styles.editText}>Editar cita</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </ImageBackground>
             </View>
@@ -211,13 +217,13 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     circleOption: {
-        width: 100,
+        width: '28%',  // Ancho proporcional para que quepan 3 opciones
         height: 100,
         borderRadius: 50,
         backgroundColor: '#f0f0f0',
         justifyContent: 'center',
         alignItems: 'center',
-        margin: 10,
+        margin: '2%',  // Espaciado proporcional
         elevation: 3,
     },
     logoutOption: {
@@ -243,5 +249,19 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: 'black',
         marginVertical: 10,
+    },
+    editOption: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: 'black', // Fondo negro
+        borderRadius: 15,
+        marginTop: 10, // Espacio superior
+        elevation: 3,
+    },
+    editText: {
+        color: 'white', // Texto blanco
+        marginLeft: 5,
     },
 });

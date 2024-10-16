@@ -20,7 +20,7 @@ const LoginScreen = ({ navigation }) => {
             // Iniciar sesión con Firebase Authentication
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            console.log("Inicio de sesión exitoso:", user);
+            
 
             // Actualizar el userId en el contexto
             setUserId(user.uid);
