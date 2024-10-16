@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, Switch, Image, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, Switch, Image, ScrollView, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
 import { useUser } from '../services/UserContext'; // Asegúrate de que la ruta sea correcta
 import { MaterialIcons } from '@expo/vector-icons'; // Asegúrate de tener la biblioteca de íconos instalada
 import { useNavigation } from '@react-navigation/native'; // Asegúrate de tener react-navigation instalado
@@ -62,10 +62,18 @@ const ClientMyAccountScreen = () => {
             }, { merge: true });
     
             console.log('Datos guardados correctamente:', { name, surname, email, phone, receiveNotifications });
-            alert('Datos guardados correctamente');
+            Alert.alert(
+                'Guardado!', // Este es el título de la alerta
+                'Datos guardados correctamente', // Este es el mensaje de la alerta
+                [{ text: 'OK' }] // Opciones de botones
+              );
         } catch (error) {
             console.error('Error guardando los datos:', error);
-            alert('Hubo un problema al guardar los datos');
+            Alert.alert(
+                'Error!', // Este es el título de la alerta
+                'Nos e ha podido guardar los datos', // Este es el mensaje de la alerta
+                [{ text: 'OK' }] // Opciones de botones
+              );
         }
     };
 
