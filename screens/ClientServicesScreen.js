@@ -4,7 +4,7 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { app } from '../services/Firebase';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const ClientServicesScreen = () => {
+const ClientServicesScreen = ({ navigation }) => { // Añadir prop para navegación
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +44,10 @@ const ClientServicesScreen = () => {
         resizeMode='cover'
       >
         <View style={styles.overlay}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Icon name="arrow-left" size={20} color="white" />
+            <Text style={styles.backButtonText}> Volver</Text>
+          </TouchableOpacity>
           <Text style={styles.title}>Servicios</Text>
 
           <View style={styles.contentWrapper}>
@@ -51,17 +55,15 @@ const ClientServicesScreen = () => {
               data={services}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
-                <View>
-                  <View style={styles.serviceCard}>
-                    <View style={styles.serviceRow}>
-                      <Text style={styles.serviceTitle}>
-                       - {item.nombre} - ({item.duracion}Min)
-                      </Text>
-                      <View style={styles.dotsContainer}>
-                        <Text style={styles.dots}></Text>
-                      </View>
-                      <Text style={styles.servicePrice}>{item.precio} €</Text>
+                <View style={styles.serviceCard}>
+                  <View style={styles.serviceRow}>
+                    <Text style={styles.serviceTitle}>
+                      - {item.nombre} - ({item.duracion} Min)
+                    </Text>
+                    <View style={styles.dotsContainer}>
+                      <Text style={styles.dots}></Text>
                     </View>
+                    <Text style={styles.servicePrice}>{item.precio} €</Text>
                   </View>
                 </View>
               )}
@@ -87,7 +89,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 20, // Espaciado lateral de 20 píxeles
     marginVertical: 20,   // Espaciado superior e inferior de 20 píxeles
-    backgroundColor: 'rgba(0, 0, 0, 0.82)', // Capa negra con opacidad al 82%
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Capa negra con opacidad al 50%
     borderRadius: 10,
     borderWidth: 5,       // Borde negro de 5 píxeles
     borderColor: 'black',
@@ -134,6 +136,15 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'white',
     marginVertical: 10,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButtonText: {
+    color: 'white',
+    marginLeft: 5,
   },
 });
 
