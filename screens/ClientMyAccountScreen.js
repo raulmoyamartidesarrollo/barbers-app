@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, Switch, Image, ScrollView, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
-import { useUser } from '../services/UserContext'; // Asegúrate de que la ruta sea correcta
-import { MaterialIcons } from '@expo/vector-icons'; // Asegúrate de tener la biblioteca de íconos instalada
-import { useNavigation } from '@react-navigation/native'; // Asegúrate de tener react-navigation instalado
-import { getFirestore, getDoc, setDoc, doc } from 'firebase/firestore'; // Asegúrate de importar Firestore
-import avatar from '../assets/avatar.png'; // Importa la imagen de avatar
+import { useUser } from '../services/UserContext';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { getFirestore, getDoc, setDoc, doc } from 'firebase/firestore';
+import avatar from '../assets/avatar.png';
+import * as ImagePicker from 'expo-image-picker';
 
 const ClientMyAccountScreen = () => {
-    const { userId } = useUser(); // Usa el hook para obtener userId
-    const navigation = useNavigation(); // Hook para la navegación
+    const { userId } = useUser();
+    const navigation = useNavigation();
 
-    // Estado para los campos editables
     const [name, setName] = useState('');
     const [surname, setSurname] = useState('');
     const [email, setEmail] = useState('');
@@ -19,7 +19,7 @@ const ClientMyAccountScreen = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [userImage, setUserImage] = useState(null); // Estado para la imagen del usuario
-    const [loading, setLoading] = useState(true); // Estado para el loading
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -34,50 +34,71 @@ const ClientMyAccountScreen = () => {
                     setEmail(userData.email || '');
                     setPhone(userData.telefono || '');
                     setReceiveNotifications(userData.receiveNotifications || false);
-                    setUserImage(userData.userImage || null);
+                    setUserImage(userData.userImage || null); // Carga la imagen existente
                 } else {
                     console.log('No se encontró el usuario en Firestore');
                 }
             }
-            setLoading(false); // Termina el loading
+            setLoading(false);
         };
 
         fetchUserData();
     }, [userId]);
 
-    // Función para manejar el guardado de datos
     const handleSave = async () => {
         try {
-            const db = getFirestore(); // Obtener la instancia de Firestore
-            const userDocRef = doc(db, 'usuarios', userId); // Referencia al documento del usuario
+            const db = getFirestore();
+            const userDocRef = doc(db, 'usuarios', userId);
     
-            // Guardar los datos en Firestore
             await setDoc(userDocRef, {
                 nombre: name,
                 apellidos: surname,
                 email: email,
                 telefono: phone,
                 receiveNotifications: receiveNotifications,
+                userImage: userImage, // Agrega la imagen del usuario al guardar
             }, { merge: true });
     
             console.log('Datos guardados correctamente:', { name, surname, email, phone, receiveNotifications });
-            Alert.alert(
-                'Guardado!', // Este es el título de la alerta
-                'Datos guardados correctamente', // Este es el mensaje de la alerta
-                [{ text: 'OK' }] // Opciones de botones
-            );
+            Alert.alert('Guardado!', 'Datos guardados correctamente', [{ text: 'OK' }]);
         } catch (error) {
             console.error('Error guardando los datos:', error);
-            Alert.alert(
-                'Error!', // Este es el título de la alerta
-                'No se ha podido guardar los datos', // Este es el mensaje de la alerta
-                [{ text: 'OK' }] // Opciones de botones
-            );
+            Alert.alert('Error!', 'No se ha podido guardar los datos', [{ text: 'OK' }]);
         }
     };
 
     const handleGoBack = () => {
         navigation.navigate('HomeScreenClient'); 
+    };
+
+    const handleCameraPress = async () => {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        
+        if (permissionResult.granted === false) {
+            Alert.alert('Permiso denegado', 'Se necesita permiso para acceder a la cámara.');
+            return;
+        }
+    
+        const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+    
+        console.log('Resultado de la cámara:', result); // Log del resultado completo
+    
+        if (!result.canceled) {
+            if (result.assets && result.assets.length > 0) {
+                const imageUri = result.assets[0].uri; // Acceder a la URI de la imagen
+                setUserImage(imageUri); // Establecer la imagen seleccionada
+                console.log('Imagen capturada:', imageUri); // Log para depuración
+            } else {
+                console.log('No se encontró ninguna imagen en el resultado.');
+            }
+        } else {
+            console.log('La operación fue cancelada.');
+        }
     };
 
     if (loading) {
@@ -95,13 +116,12 @@ const ClientMyAccountScreen = () => {
                         <ScrollView>
                             <Text style={styles.title}>Mi Cuenta</Text>
 
-                            {/* Imagen de usuario */}
                             <View style={styles.imageContainer}>
                                 <Image
                                     source={userImage ? { uri: userImage } : avatar} 
                                     style={styles.userImage}
                                 />
-                                <TouchableOpacity style={styles.cameraButton}>
+                                <TouchableOpacity style={styles.cameraButton} onPress={handleCameraPress}>
                                     <MaterialIcons name="camera-alt" size={24} color="black" />
                                 </TouchableOpacity>
                             </View>
@@ -155,7 +175,6 @@ const ClientMyAccountScreen = () => {
                                         secureTextEntry
                                     />
                                     
-                                    {/* Botones Guardar y Volver en la misma fila */}
                                     <View style={styles.buttonContainer}>
                                         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                                             <Text style={styles.saveButtonText}>Guardar Datos</Text>
@@ -185,7 +204,7 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flexGrow: 1,
-        backgroundColor: 'rgba(211, 211, 211, 0.8)', // Gris claro al 80% de opacidad
+        backgroundColor: 'rgba(211, 211, 211, 0.8)',
         width: '90%', 
         height: '70%',
         marginHorizontal: 10,
@@ -193,14 +212,14 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 20,
         borderColor: 'black',
-        borderWidth: 5, // Borde negro
+        borderWidth: 5,
         justifyContent: 'center',
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 20,
         textAlign: 'center',
+        marginBottom: 20,
     },
     imageContainer: {
         alignItems: 'center',
@@ -209,72 +228,68 @@ const styles = StyleSheet.create({
     userImage: {
         width: 100,
         height: 100,
-        borderRadius: 50, 
-        marginBottom: -30, 
+        borderRadius: 50,
+        marginBottom: 10,
     },
     cameraButton: {
         position: 'absolute',
-        bottom: -20,
-        right: 100,
+        bottom: 10,
+        right: 80,
         backgroundColor: 'white',
         borderRadius: 15,
         padding: 5,
         elevation: 3, 
     },
     userInfo: {
-        marginTop: 10,
+        marginBottom: 20,
     },
     input: {
         height: 40,
-        borderColor: 'gray',
+        borderColor: 'black',
         borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 15,
+        marginBottom: 10,
         paddingHorizontal: 10,
+        borderRadius: 5,
     },
     switchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 15,
+        marginBottom: 20,
     },
     switchLabel: {
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 16,
     },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 20,
     },
     saveButton: {
-        flex: 1,
         backgroundColor: 'black',
-        paddingVertical: 10,
         borderRadius: 5,
+        padding: 10,
+        width: '48%',
         alignItems: 'center',
-        marginRight: 10, 
     },
     saveButtonText: {
         color: 'white',
-        fontSize: 18,
+        fontWeight: 'bold',
     },
     backButton: {
-        flex: 1,
-        backgroundColor: 'white',
-        paddingVertical: 10,
+        backgroundColor: 'gray',
         borderRadius: 5,
+        padding: 10,
+        width: '48%',
         alignItems: 'center',
-        marginLeft: 10, 
     },
     backButtonText: {
-        color: 'black',
-        fontSize: 18,
+        color: 'white',
+        fontWeight: 'bold',
     },
     message: {
-        fontSize: 18,
-        color: 'red',
         textAlign: 'center',
+        marginTop: 20,
+        fontSize: 18,
     },
 });
 
