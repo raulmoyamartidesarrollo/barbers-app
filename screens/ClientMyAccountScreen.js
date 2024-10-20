@@ -58,7 +58,6 @@ const ClientMyAccountScreen = () => {
                 email: email,
                 telefono: phone,
                 receiveNotifications: receiveNotifications,
-               
             }, { merge: true });
     
             console.log('Datos guardados correctamente:', { name, surname, email, phone, receiveNotifications });
@@ -66,14 +65,14 @@ const ClientMyAccountScreen = () => {
                 'Guardado!', // Este es el título de la alerta
                 'Datos guardados correctamente', // Este es el mensaje de la alerta
                 [{ text: 'OK' }] // Opciones de botones
-              );
+            );
         } catch (error) {
             console.error('Error guardando los datos:', error);
             Alert.alert(
                 'Error!', // Este es el título de la alerta
-                'Nos e ha podido guardar los datos', // Este es el mensaje de la alerta
+                'No se ha podido guardar los datos', // Este es el mensaje de la alerta
                 [{ text: 'OK' }] // Opciones de botones
-              );
+            );
         }
     };
 
@@ -155,13 +154,17 @@ const ClientMyAccountScreen = () => {
                                         onChangeText={setConfirmPassword}
                                         secureTextEntry
                                     />
-                                    <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                                        <Text style={styles.saveButtonText}>Guardar Datos</Text>
-                                    </TouchableOpacity>
+                                    
+                                    {/* Botones Guardar y Volver en la misma fila */}
+                                    <View style={styles.buttonContainer}>
+                                        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                                            <Text style={styles.saveButtonText}>Guardar Datos</Text>
+                                        </TouchableOpacity>
 
-                                    <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-                                        <Text style={styles.backButtonText}>Volver</Text>
-                                    </TouchableOpacity>
+                                        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+                                            <Text style={styles.backButtonText}>Volver</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             ) : (
                                 <Text style={styles.message}>No hay usuario logeado.</Text>
@@ -183,10 +186,10 @@ const styles = StyleSheet.create({
     overlay: {
         flexGrow: 1,
         backgroundColor: 'rgba(211, 211, 211, 0.8)', // Gris claro al 80% de opacidad
-        width: '90%', // Cambiado a 80%
-        height: '70%', // Altura al 80% de la pantalla
-        marginHorizontal: 10, // Márgenes izquierdo y derecho de 10
-        marginVertical: 100, // Márgenes superior e inferior de 10
+        width: '90%', 
+        height: '70%',
+        marginHorizontal: 10,
+        marginVertical: 100, 
         borderRadius: 10,
         padding: 20,
         borderColor: 'black',
@@ -206,8 +209,8 @@ const styles = StyleSheet.create({
     userImage: {
         width: 100,
         height: 100,
-        borderRadius: 50, // Imagen circular
-        marginBottom: -30, // Para superponer el botón
+        borderRadius: 50, 
+        marginBottom: -30, 
     },
     cameraButton: {
         position: 'absolute',
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 15,
         padding: 5,
-        elevation: 3, // Sombra para el botón
+        elevation: 3, 
     },
     userInfo: {
         marginTop: 10,
@@ -239,22 +242,30 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
     saveButton: {
+        flex: 1,
         backgroundColor: 'black',
         paddingVertical: 10,
         borderRadius: 5,
         alignItems: 'center',
+        marginRight: 10, 
     },
     saveButtonText: {
         color: 'white',
         fontSize: 18,
     },
     backButton: {
+        flex: 1,
         backgroundColor: 'white',
         paddingVertical: 10,
         borderRadius: 5,
         alignItems: 'center',
-        marginTop: 20, // Espaciado superior para el botón de volver
+        marginLeft: 10, 
     },
     backButtonText: {
         color: 'black',
