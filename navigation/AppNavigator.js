@@ -9,7 +9,7 @@ import CreateAccountClientScreen from '../screens/CreateAccountClientScreen';
 import ClientMyAccountScreen from '../screens/ClientMyAccountScreen';
 import { useUser } from '../services/UserContext';
 import ClientServicesScreen from '../screens/ClientServicesScreen';
-
+import ClientRequestAppointmentScreen from '../screens/ClientRequestAppointmentScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -34,6 +34,7 @@ export default function AppNavigator() {
           <Stack.Screen name="AdminHomeScreen" component={AdminHomeScreen} />
           <Stack.Screen name="ClientMyAccountScreen" component={ClientMyAccountScreen} />
           <Stack.Screen name="ClientServicesScreen" component={ClientServicesScreen} />
+          <Stack.Screen name="ClientRequestAppointment" component={ClientRequestAppointmentScreen} />
         </>
       ) : (
         <>

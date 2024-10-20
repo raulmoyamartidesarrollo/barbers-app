@@ -35,7 +35,7 @@ export default function HomeScreenClient() {
     };
 
     const handleBookingNow = () => {
-        navigation.navigate('BookingNow');
+        navigation.navigate('ClientRequestAppointment');
     };
 
     const handleMyAccount = () => {
