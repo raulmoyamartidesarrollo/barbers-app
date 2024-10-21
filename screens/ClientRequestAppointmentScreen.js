@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 
@@ -77,8 +77,12 @@ const ClientRequestAppointmentScreen = () => {
             </View>
             
             <View style={styles.pickerContainer}>
-                <Button onPress={showMode.bind(this, 'date')} title="📅 Seleccionar Fecha" color="#4CAF50" />
-                <Button onPress={showMode.bind(this, 'time')} title="🕒 Seleccionar Hora" color="#4CAF50" />
+                <TouchableOpacity style={styles.button} onPress={() => showMode('date')}>
+                    <Text style={styles.buttonText}>📅 Seleccionar Fecha</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={() => showMode('time')}>
+                    <Text style={styles.buttonText}>🕒 Seleccionar Hora</Text>
+                </TouchableOpacity>
             </View>
 
             <Text style={styles.selectedDate}>Seleccionado: {date.toLocaleString()}</Text>
@@ -94,8 +98,12 @@ const ClientRequestAppointmentScreen = () => {
             )}
 
             <View style={styles.buttonContainer}>
-                <Button title="Confirmar Cita" onPress={() => console.log("Cita Confirmada")} color="#4CAF50" />
-                <Button title="Volver Atrás" onPress={() => console.log("Volver Atrás")} color="#FF5722" />
+                <TouchableOpacity style={styles.confirmButton} onPress={() => console.log("Cita Confirmada")}>
+                    <Text style={styles.confirmButtonText}>Confirmar Cita</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.backButton} onPress={() => console.log("Volver Atrás")}>
+                    <Text style={styles.backButtonText}>Volver Atrás</Text>
+                </TouchableOpacity>
             </View>
         </ImageBackground>
     );
@@ -126,14 +134,14 @@ const styles = StyleSheet.create({
         marginHorizontal: '5%',
         marginBottom: 16,
         borderRadius: 25,
-        overflow: 'hidden', // Para que las esquinas redondeadas se apliquen
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo negro transparente
+        overflow: 'hidden',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         borderWidth: 5,
-        borderColor: 'black', // Color de borde del calendario
+        borderColor: 'black',
     },
     calendar: {
         borderWidth: 5,
-        borderColor: 'black', // Color de borde del calendario
+        borderColor: 'black',
     },
     pickerContainer: {
         flexDirection: 'row',
@@ -150,7 +158,43 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '80%',
-        marginTop: 20, // Espacio entre el calendario y los botones
+        marginTop: 20,
+    },
+    confirmButton: {
+        backgroundColor: 'black',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    confirmButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    backButton: {
+        backgroundColor: 'white',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    backButtonText: {
+        color: 'black',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    button: {
+        backgroundColor: '#4CAF50',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 });
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, Switch, Image, ScrollView, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
 import { useUser } from '../services/UserContext';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -49,16 +50,29 @@ const ClientMyAccountScreen = () => {
         try {
             const db = getFirestore();
             const userDocRef = doc(db, 'usuarios', userId);
-    
+
+            let imageUrl = userImage;
+
+            // Subir la imagen si se ha seleccionado una
+            if (userImage && typeof userImage === 'string' && userImage.startsWith('file://')) {
+                const response = await fetch(userImage);
+                const blob = await response.blob();
+                const storage = getStorage();
+                const storageRef = ref(storage, `userImages/${userId}.jpg`);
+                
+                await uploadBytes(storageRef, blob);
+                imageUrl = await getDownloadURL(storageRef);
+            }
+
             await setDoc(userDocRef, {
                 nombre: name,
                 apellidos: surname,
                 email: email,
                 telefono: phone,
                 receiveNotifications: receiveNotifications,
-                userImage: userImage, // Agrega la imagen del usuario al guardar
+                userImage: imageUrl, // Agrega la imagen del usuario al guardar
             }, { merge: true });
-    
+
             console.log('Datos guardados correctamente:', { name, surname, email, phone, receiveNotifications });
             Alert.alert('Guardado!', 'Datos guardados correctamente', [{ text: 'OK' }]);
         } catch (error) {
@@ -268,28 +282,27 @@ const styles = StyleSheet.create({
         backgroundColor: 'black',
         borderRadius: 5,
         padding: 10,
-        width: '48%',
-        alignItems: 'center',
+        flex: 1,
+        marginRight: 5,
     },
     saveButtonText: {
         color: 'white',
-        fontWeight: 'bold',
+        textAlign: 'center',
     },
     backButton: {
-        backgroundColor: 'gray',
+        backgroundColor: 'grey',
         borderRadius: 5,
         padding: 10,
-        width: '48%',
-        alignItems: 'center',
+        flex: 1,
+        marginLeft: 5,
     },
     backButtonText: {
         color: 'white',
-        fontWeight: 'bold',
+        textAlign: 'center',
     },
     message: {
         textAlign: 'center',
-        marginTop: 20,
-        fontSize: 18,
+        color: 'red',
     },
 });
 
