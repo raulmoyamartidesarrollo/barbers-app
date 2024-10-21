@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { useNavigation } from '@react-navigation/native';
 
 // Configuración del idioma a español
 LocaleConfig.locales['es'] = {
@@ -26,11 +27,36 @@ const ClientRequestAppointmentScreen = () => {
     const [date, setDate] = useState(new Date());
     const [mode, setMode] = useState('date');
     const [show, setShow] = useState(false);
+    const [selectedTime, setSelectedTime] = useState(null);
+    const [availableTimes, setAvailableTimes] = useState([]);
+    const navigation = useNavigation(); // Hook para navegación
 
     const onChange = (event, selectedDate) => {
         const currentDate = selectedDate || date;
         setShow(false);
         setDate(currentDate);
+        // Aquí puedes calcular los horarios disponibles según la fecha seleccionada
+        setAvailableTimes(getAvailableTimes(currentDate));
+    };
+
+    const getAvailableTimes = (selectedDate) => {
+        const times = [];
+        const startTime = new Date(selectedDate.setHours(10, 0, 0));
+        const endTimeMorning = new Date(selectedDate.setHours(14, 0, 0));
+        const startTimeAfternoon = new Date(selectedDate.setHours(16, 0, 0));
+        const endTimeEvening = new Date(selectedDate.setHours(20, 0, 0));
+
+        while (startTime <= endTimeMorning) {
+            times.push(startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+            startTime.setMinutes(startTime.getMinutes() + 15);
+        }
+
+        while (startTimeAfternoon <= endTimeEvening) {
+            times.push(startTimeAfternoon.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+            startTimeAfternoon.setMinutes(startTimeAfternoon.getMinutes() + 15);
+        }
+
+        return times;
     };
 
     const showMode = (currentMode) => {
@@ -38,54 +64,61 @@ const ClientRequestAppointmentScreen = () => {
         setMode(currentMode);
     };
 
-    const disabledDays = {
-        '2024-10-21': { color: 'red' }, // Ejemplo de un día no disponible
-        '2024-10-22': { color: 'red' },
-    };
-
     return (
-        <ImageBackground
-            source={require('../assets/background.jpg')}
-            style={styles.container}
-        >
+        <ImageBackground source={require('../assets/background.jpg')} style={styles.container}>
             <Text style={styles.title}>Solicitar Cita</Text>
             <Text style={styles.instruction}>Selecciona un día y hora para tu servicio:</Text>
-            
+
             <View style={styles.calendarContainer}>
                 <Calendar
-                    minDate={new Date().toISOString().split('T')[0]} // No permitir reservas en fechas anteriores
-                    markedDates={disabledDays}
-                    onDayPress={(day) => {
-                        console.log('Día seleccionado: ', day);
-                    }}
+                    minDate={new Date().toISOString().split('T')[0]}
+                    onDayPress={onChange}
                     style={styles.calendar}
                     theme={{
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo negro transparente
-                        calendarBackground: 'rgba(0, 0, 0, 0.5)', // Fondo del calendario
-                        textSectionTitleColor: 'white', // Color de título de sección
-                        selectedDayBackgroundColor: 'white', // Color del día seleccionado
-                        selectedDayTextColor: 'black', // Color del texto del día seleccionado
-                        todayTextColor: 'white', // Color del texto de hoy
-                        dayTextColor: 'white', // Color de texto de los días
-                        textDisabledColor: 'gray', // Color de texto para días no disponibles
-                        dotColor: 'red', // Color de los puntos
-                        arrowColor: 'white', // Color de flechas de navegación
-                        monthTextColor: 'white', // Color del texto del mes
-                        indicatorColor: 'white', // Color del indicador
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        calendarBackground: 'rgba(0, 0, 0, 0.5)',
+                        textSectionTitleColor: 'white',
+                        selectedDayBackgroundColor: 'white',
+                        selectedDayTextColor: 'black',
+                        todayTextColor: 'white',
+                        dayTextColor: 'white',
+                        textDisabledColor: 'gray',
+                        dotColor: 'red',
+                        arrowColor: 'white',
+                        monthTextColor: 'white',
+                        indicatorColor: 'white',
                     }}
                 />
             </View>
-            
-            <View style={styles.pickerContainer}>
-                <TouchableOpacity style={styles.button} onPress={() => showMode('date')}>
-                    <Text style={styles.buttonText}>📅 Seleccionar Fecha</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => showMode('time')}>
-                    <Text style={styles.buttonText}>🕒 Seleccionar Hora</Text>
-                </TouchableOpacity>
+
+            {availableTimes.length > 0 && (
+                <View style={styles.timeSelectorContainer}>
+                    <TouchableOpacity style={styles.arrowButton}>
+                        <Text style={styles.arrowText}>{'<'}</Text>
+                    </TouchableOpacity>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeSelector}>
+                        {availableTimes.map((time, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[styles.chip, selectedTime === time && styles.chipSelected]}
+                                onPress={() => setSelectedTime(time)}
+                            >
+                                <Text style={styles.chipText}>{time}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                    <TouchableOpacity style={styles.arrowButton}>
+                        <Text style={styles.arrowText}>{'>'}</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {/* Contenedor para la fecha y hora seleccionadas */}
+            <View style={styles.selectedContainer}>
+                <Text style={styles.selectedText}>Fecha y Hora Seleccionada:</Text>
+                <Text style={styles.selectedDate}>{date.toLocaleDateString()} {selectedTime || 'No seleccionado'}</Text>
             </View>
 
-            <Text style={styles.selectedDate}>Seleccionado: {date.toLocaleString()}</Text>
             {show && (
                 <DateTimePicker
                     testID="dateTimePicker"
@@ -97,11 +130,19 @@ const ClientRequestAppointmentScreen = () => {
                 />
             )}
 
+            <Text style={styles.confirmationText}>¡Confirma tu cita haciendo clic en "Confirmar Cita"!</Text>
+
             <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.confirmButton} onPress={() => console.log("Cita Confirmada")}>
+                <TouchableOpacity 
+                    style={styles.confirmButton} 
+                    onPress={() => console.log("Cita Confirmada")}
+                >
                     <Text style={styles.confirmButtonText}>Confirmar Cita</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.backButton} onPress={() => console.log("Volver Atrás")}>
+                <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={() => navigation.navigate('HomeScreenClient')}
+                >
                     <Text style={styles.backButtonText}>Volver Atrás</Text>
                 </TouchableOpacity>
             </View>
@@ -109,6 +150,7 @@ const ClientRequestAppointmentScreen = () => {
     );
 };
 
+// Estilos actualizados
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -139,20 +181,43 @@ const styles = StyleSheet.create({
         borderWidth: 5,
         borderColor: 'black',
     },
-    calendar: {
+    timeSelectorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '90%',
+        marginHorizontal: '5%',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: 25,
         borderWidth: 5,
         borderColor: 'black',
     },
-    pickerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '80%',
-        marginBottom: 16,
+    selectedContainer: {
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Fondo blanco con opacidad
+        borderRadius: 10,
+        padding: 15,
+        marginVertical: 20,
+        width: '90%',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: 'black',
+    },
+    selectedText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'black',
     },
     selectedDate: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: 'black',
+        marginTop: 10,
+    },
+    confirmationText: {
         fontSize: 18,
-        marginTop: 16,
         color: 'white',
+        textAlign: 'center',
+        marginVertical: 10,
+        fontWeight: 'bold',
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -184,17 +249,31 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
     },
-    button: {
-        backgroundColor: '#4CAF50',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 5,
+    arrowButton: {
+        padding: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
-    buttonText: {
+    arrowText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: 'bold',
-        textAlign: 'center',
+    },
+    timeSelector: {
+        flexGrow: 1,
+        marginVertical: 10,
+    },
+    chip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        padding: 10,
+        borderRadius: 20,
+        marginHorizontal: 5,
+    },
+    chipSelected: {
+        backgroundColor: 'black',
+    },
+    chipText: {
+        color: 'black',
+        fontWeight: 'bold',
     },
 });
 
