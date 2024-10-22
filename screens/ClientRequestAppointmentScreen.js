@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
+import { db } from '../services/Firebase'; // Asegúrate de tener tu servicio de Firebase configurado correctamente.
+import { collection, getDocs } from 'firebase/firestore';
 
 // Configuración del idioma a español
 LocaleConfig.locales['es'] = {
@@ -29,14 +31,31 @@ const ClientRequestAppointmentScreen = () => {
     const [show, setShow] = useState(false);
     const [selectedTime, setSelectedTime] = useState(null);
     const [availableTimes, setAvailableTimes] = useState([]);
-    const navigation = useNavigation(); // Hook para navegación
+    const [disabledDates, setDisabledDates] = useState({});
+    const navigation = useNavigation();
 
-    const onChange = (event, selectedDate) => {
-        const currentDate = selectedDate || date;
-        setShow(false);
-        setDate(currentDate);
-        // Aquí puedes calcular los horarios disponibles según la fecha seleccionada
-        setAvailableTimes(getAvailableTimes(currentDate));
+    useEffect(() => {
+        // Obtener las fechas no disponibles desde Firestore
+        const fetchDisabledDates = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'reglas_bloqueo'));
+                const disabled = {};
+                querySnapshot.forEach((doc) => {
+                    const date = doc.data().fecha; 
+                    disabled[date] = { disabled: true, disableTouchEvent: true, color: 'red', textColor: 'white' };
+                });
+                setDisabledDates(disabled);
+            } catch (error) {
+                console.error("Error obteniendo fechas no disponibles: ", error);
+            }
+        };
+        fetchDisabledDates();
+    }, []);
+
+    const onChange = (day) => {
+        const selectedDate = new Date(day.timestamp);
+        setDate(selectedDate);
+        setAvailableTimes(getAvailableTimes(selectedDate));
     };
 
     const getAvailableTimes = (selectedDate) => {
@@ -59,11 +78,6 @@ const ClientRequestAppointmentScreen = () => {
         return times;
     };
 
-    const showMode = (currentMode) => {
-        setShow(true);
-        setMode(currentMode);
-    };
-
     return (
         <ImageBackground source={require('../assets/background.jpg')} style={styles.container}>
             <Text style={styles.title}>Solicitar Cita</Text>
@@ -73,6 +87,7 @@ const ClientRequestAppointmentScreen = () => {
                 <Calendar
                     minDate={new Date().toISOString().split('T')[0]}
                     onDayPress={onChange}
+                    markedDates={disabledDates}
                     style={styles.calendar}
                     theme={{
                         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -113,7 +128,6 @@ const ClientRequestAppointmentScreen = () => {
                 </View>
             )}
 
-            {/* Contenedor para la fecha y hora seleccionadas */}
             <View style={styles.selectedContainer}>
                 <Text style={styles.selectedText}>Fecha y Hora Seleccionada:</Text>
                 <Text style={styles.selectedDate}>{date.toLocaleDateString()} {selectedTime || 'No seleccionado'}</Text>
@@ -210,70 +224,63 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: 'black',
-        marginTop: 10,
+        marginTop: 5,
     },
-    confirmationText: {
-        fontSize: 18,
-        color: 'white',
-        textAlign: 'center',
-        marginVertical: 10,
-        fontWeight: 'bold',
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '80%',
-        marginTop: 20,
-    },
-    confirmButton: {
-        backgroundColor: 'black',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 5,
-    },
-    confirmButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    backButton: {
-        backgroundColor: 'white',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 5,
-    },
-    backButtonText: {
-        color: 'black',
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    arrowButton: {
+    calendar: {
         padding: 10,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    arrowText: {
-        color: 'white',
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    timeSelector: {
-        flexGrow: 1,
-        marginVertical: 10,
+        borderRadius: 25,
     },
     chip: {
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'white',
+        borderColor: 'black',
+        borderWidth: 1,
         padding: 10,
-        borderRadius: 20,
         marginHorizontal: 5,
+        borderRadius: 20,
     },
     chipSelected: {
         backgroundColor: 'black',
     },
     chipText: {
         color: 'black',
+    },
+    arrowButton: {
+        padding: 10,
+        borderRadius: 20,
+    },
+    arrowText: {
+        fontSize: 20,
+        color: 'white',
+    },
+    confirmButton: {
+        backgroundColor: 'black',
+        paddingVertical: 15,
+        paddingHorizontal: 30,
+        borderRadius: 10,
+    },
+    confirmButtonText: {
+        color: 'white',
         fontWeight: 'bold',
+    },
+    backButton: {
+        backgroundColor: 'gray',
+        paddingVertical: 15,
+        paddingHorizontal: 30,
+        borderRadius: 10,
+        marginTop: 10,
+    },
+    backButtonText: {
+        color: 'white',
+    },
+    confirmationText: {
+        color: 'white',
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    buttonContainer: {
+        width: '90%',
+        alignItems: 'center',
     },
 });
 
