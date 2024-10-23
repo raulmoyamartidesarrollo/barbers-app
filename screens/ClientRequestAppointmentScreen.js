@@ -1,25 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, ScrollView } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../services/Firebase'; // Asegúrate de tener tu servicio de Firebase configurado correctamente.
-import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../services/Firebase';
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
+import { useUser } from '../services/UserContext';
+
+
 
 // Configuración del idioma a español
 LocaleConfig.locales['es'] = {
-    monthNames: [
-        'Enero', 'Febrero', 'Marzo', 'Abril',
-        'Mayo', 'Junio', 'Julio', 'Agosto',
-        'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ],
-    monthNamesShort: [
-        'Ene', 'Feb', 'Mar', 'Abr',
-        'May', 'Jun', 'Jul', 'Ago',
-        'Sep', 'Oct', 'Nov', 'Dic'
-    ],
-    dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
-    dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+    monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+    monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    dayNames: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+    dayNamesShort: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
     today: 'Hoy',
 };
 
@@ -27,38 +22,70 @@ LocaleConfig.defaultLocale = 'es';
 
 const ClientRequestAppointmentScreen = () => {
     const [date, setDate] = useState(new Date());
-    const [mode, setMode] = useState('date');
-    const [show, setShow] = useState(false);
     const [selectedTime, setSelectedTime] = useState(null);
     const [availableTimes, setAvailableTimes] = useState([]);
     const [disabledDates, setDisabledDates] = useState({});
+    const [services, setServices] = useState([]);
+    const [selectedService, setSelectedService] = useState(null);
     const navigation = useNavigation();
 
     useEffect(() => {
-        // Obtener las fechas no disponibles desde Firestore
         const fetchDisabledDates = async () => {
             try {
-                const querySnapshot = await getDocs(collection(db, 'reglas_bloqueo'));
+                const querySnapshot = await getDocs(collection(db, 'fechas_no_disponibles'));
                 const disabled = {};
+
+                // Agregar fechas no disponibles de Firestore
                 querySnapshot.forEach((doc) => {
-                    const date = doc.data().fecha; 
-                    disabled[date] = { disabled: true, disableTouchEvent: true, color: 'red', textColor: 'white' };
+                    const data = doc.data();
+                    disabled[data.fecha] = { disabled: true, disableTouchEvent: true, color: 'red', textColor: 'white' };
                 });
+
+                // Deshabilitar domingos
+                const today = new Date();
+                const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay())); // primer día de la semana (domingo)
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6); // fin de la semana (sábado)
+
+                for (let d = startOfWeek; d <= endOfWeek; d.setDate(d.getDate() + 1)) {
+                    if (d.getDay() === 0) { // si es domingo
+                        const formattedDate = d.toISOString().split('T')[0];
+                        disabled[formattedDate] = { disabled: true, disableTouchEvent: true, color: 'red', textColor: 'white' };
+                    }
+                }
+
                 setDisabledDates(disabled);
             } catch (error) {
                 console.error("Error obteniendo fechas no disponibles: ", error);
             }
         };
+
+        const fetchServices = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'servicios'));
+                const serviceList = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    serviceList.push({ id: doc.id, ...data });
+                });
+                setServices(serviceList);
+            } catch (error) {
+                console.error("Error obteniendo servicios: ", error);
+            }
+        };
+
         fetchDisabledDates();
+        fetchServices();
     }, []);
 
-    const onChange = (day) => {
+    const onChange = async (day) => {
         const selectedDate = new Date(day.timestamp);
         setDate(selectedDate);
-        setAvailableTimes(getAvailableTimes(selectedDate));
+        setAvailableTimes(await getAvailableTimes(selectedDate));
+        setSelectedTime(null); // Reiniciar el tiempo seleccionado al cambiar de fecha
     };
 
-    const getAvailableTimes = (selectedDate) => {
+    const getAvailableTimes = async (selectedDate) => {
         const times = [];
         const startTime = new Date(selectedDate.setHours(10, 0, 0));
         const endTimeMorning = new Date(selectedDate.setHours(14, 0, 0));
@@ -75,7 +102,68 @@ const ClientRequestAppointmentScreen = () => {
             startTimeAfternoon.setMinutes(startTimeAfternoon.getMinutes() + 15);
         }
 
-        return times;
+        // Filtrar horarios ocupados
+        const formattedDate = selectedDate.toISOString().split('T')[0];
+        const querySnapshot = await getDocs(query(collection(db, 'reservas'), where('fecha', '==', formattedDate)));
+        const reservedTimes = querySnapshot.docs.map(doc => doc.data().hora);
+
+        return times.filter(time => !reservedTimes.includes(time));
+    };
+
+    const handleConfirmAppointment = async () => {
+        if (!selectedTime || !selectedService) {
+            Alert.alert("Error", "Por favor, selecciona un servicio y una hora.");
+            return;
+        }
+
+        const { userId } = useUser();
+        console.log("userId: ", userId);
+        const appointmentDate = date.toISOString().split('T')[0];
+        const appointmentTime = selectedTime;
+
+        try {
+            // Guarda la reserva en Firestore
+            await addDoc(collection(db, 'reservas'), {
+                userId,
+                fecha: appointmentDate,
+                hora: appointmentTime,
+                servicio: selectedService, // Usar el servicio seleccionado
+            });
+
+            Alert.alert("Éxito", "Cita confirmada exitosamente!");
+
+            // Preguntar si desea repetir la cita
+            Alert.alert("Repetir Cita", "¿Deseas repetir esta cita hasta final de año?", [
+                { text: "Sí", onPress: () => handleRepeatAppointment(userId, appointmentDate, appointmentTime) },
+                { text: "No", onPress: () => navigation.navigate('HomeScreenClient') },
+            ]);
+        } catch (error) {
+            console.error("Error al confirmar la cita: ", error);
+            Alert.alert("Error", "Hubo un problema al confirmar la cita. Inténtalo nuevamente.");
+        }
+    };
+
+    const handleRepeatAppointment = async (userId, appointmentDate, appointmentTime) => {
+        const today = new Date();
+        const endYear = new Date(today.getFullYear(), 11, 31); // Final de año
+
+        // Reservar citas todos los lunes a la misma hora hasta el final del año
+        for (let d = new Date(appointmentDate); d <= endYear; d.setDate(d.getDate() + 7)) {
+            const formattedDate = d.toISOString().split('T')[0];
+            try {
+                await addDoc(collection(db, 'reservas'), {
+                    userId,
+                    fecha: formattedDate,
+                    hora: appointmentTime,
+                    servicio: selectedService, // Usar el servicio seleccionado
+                });
+            } catch (error) {
+                console.error("Error al repetir la cita: ", error);
+            }
+        }
+
+        Alert.alert("Éxito", "Citas repetidas confirmadas hasta el final del año!");
+        navigation.navigate('HomeScreenClient');
     };
 
     return (
@@ -88,6 +176,7 @@ const ClientRequestAppointmentScreen = () => {
                     minDate={new Date().toISOString().split('T')[0]}
                     onDayPress={onChange}
                     markedDates={disabledDates}
+                    firstDay={1} // Establecer el primer día de la semana en lunes
                     style={styles.calendar}
                     theme={{
                         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -98,189 +187,94 @@ const ClientRequestAppointmentScreen = () => {
                         todayTextColor: 'white',
                         dayTextColor: 'white',
                         textDisabledColor: 'gray',
-                        dotColor: 'red',
-                        arrowColor: 'white',
-                        monthTextColor: 'white',
-                        indicatorColor: 'white',
+                        dotColor: 'white',
+                        selectedDotColor: 'black',
                     }}
                 />
             </View>
 
-            {availableTimes.length > 0 && (
-                <View style={styles.timeSelectorContainer}>
-                    <TouchableOpacity style={styles.arrowButton}>
-                        <Text style={styles.arrowText}>{'<'}</Text>
+            <Picker
+                selectedValue={selectedService}
+                style={styles.picker}
+                onValueChange={(itemValue) => setSelectedService(itemValue)}
+            >
+                <Picker.Item label="Selecciona un servicio" value={null} />
+                {services.map((service) => (
+                    <Picker.Item key={service.id} label={service.nombre} value={service.id} />
+                ))}
+            </Picker>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {availableTimes.map((time, index) => (
+                    <TouchableOpacity key={index} onPress={() => setSelectedTime(time)} style={[styles.timeButton, selectedTime === time && styles.selectedTime]}>
+                        <Text style={styles.timeText}>{time}</Text>
                     </TouchableOpacity>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeSelector}>
-                        {availableTimes.map((time, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[styles.chip, selectedTime === time && styles.chipSelected]}
-                                onPress={() => setSelectedTime(time)}
-                            >
-                                <Text style={styles.chipText}>{time}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                    <TouchableOpacity style={styles.arrowButton}>
-                        <Text style={styles.arrowText}>{'>'}</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
+                ))}
+            </ScrollView>
 
-            <View style={styles.selectedContainer}>
-                <Text style={styles.selectedText}>Fecha y Hora Seleccionada:</Text>
-                <Text style={styles.selectedDate}>{date.toLocaleDateString()} {selectedTime || 'No seleccionado'}</Text>
-            </View>
-
-            {show && (
-                <DateTimePicker
-                    testID="dateTimePicker"
-                    value={date}
-                    mode={mode}
-                    is24Hour={true}
-                    display="default"
-                    onChange={onChange}
-                />
-            )}
-
-            <Text style={styles.confirmationText}>¡Confirma tu cita haciendo clic en "Confirmar Cita"!</Text>
-
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity 
-                    style={styles.confirmButton} 
-                    onPress={() => console.log("Cita Confirmada")}
-                >
-                    <Text style={styles.confirmButtonText}>Confirmar Cita</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={styles.backButton} 
-                    onPress={() => navigation.navigate('HomeScreenClient')}
-                >
-                    <Text style={styles.backButtonText}>Volver Atrás</Text>
-                </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={handleConfirmAppointment} style={styles.confirmButton}>
+                <Text style={styles.confirmText}>Confirmar Cita</Text>
+            </TouchableOpacity>
         </ImageBackground>
     );
 };
 
-// Estilos actualizados
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        padding: 16,
+        justifyContent: 'center',
+        padding: 20,
     },
     title: {
-        fontSize: 28,
-        marginTop: 25,
-        marginBottom: 10,
-        color: 'white',
-        fontWeight: 'bold',
-    },
-    instruction: {
-        fontSize: 18,
-        marginBottom: 20,
-        color: 'white',
-        textAlign: 'center',
-    },
-    calendarContainer: {
-        width: '90%',
-        marginHorizontal: '5%',
-        marginBottom: 16,
-        borderRadius: 25,
-        overflow: 'hidden',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        borderWidth: 5,
-        borderColor: 'black',
-    },
-    timeSelectorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '90%',
-        marginHorizontal: '5%',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        borderRadius: 25,
-        borderWidth: 5,
-        borderColor: 'black',
-    },
-    selectedContainer: {
-        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Fondo blanco con opacidad
-        borderRadius: 10,
-        padding: 15,
-        marginVertical: 20,
-        width: '90%',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: 'black',
-    },
-    selectedText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: 'black',
-    },
-    selectedDate: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: 'black',
-        marginTop: 5,
+        color: 'white',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    instruction: {
+        fontSize: 16,
+        color: 'white',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    calendarContainer: {
+        marginBottom: 20,
     },
     calendar: {
-        padding: 10,
-        borderRadius: 25,
-    },
-    chip: {
-        backgroundColor: 'white',
-        borderColor: 'black',
         borderWidth: 1,
+        borderColor: 'white',
+        borderRadius: 10,
+    },
+    picker: {
+        height: 50,
+        width: '100%',
+        color: 'black',
+        marginBottom: 20,
+    },
+    timeButton: {
+        backgroundColor: 'black',
+        borderRadius: 10,
         padding: 10,
         marginHorizontal: 5,
-        borderRadius: 20,
     },
-    chipSelected: {
-        backgroundColor: 'black',
+    selectedTime: {
+        backgroundColor: 'white',
     },
-    chipText: {
-        color: 'black',
-    },
-    arrowButton: {
-        padding: 10,
-        borderRadius: 20,
-    },
-    arrowText: {
-        fontSize: 20,
+    timeText: {
         color: 'white',
+        fontWeight: 'bold',
     },
     confirmButton: {
         backgroundColor: 'black',
-        paddingVertical: 15,
-        paddingHorizontal: 30,
         borderRadius: 10,
-    },
-    confirmButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-    },
-    backButton: {
-        backgroundColor: 'gray',
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 10,
-        marginTop: 10,
-    },
-    backButtonText: {
-        color: 'white',
-    },
-    confirmationText: {
-        color: 'white',
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    buttonContainer: {
-        width: '90%',
+        padding: 15,
         alignItems: 'center',
+    },
+    confirmText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });
 

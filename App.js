@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth'; 
 import { UserProvider } from './services/UserContext'; 
 import * as Notifications from 'expo-notifications';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -54,7 +54,7 @@ const App = () => {
       setLoading(false);
 
       // Solo registra las notificaciones si el usuario está logueado y los permisos no han sido solicitados previamente
-      if (user) {
+      if (user && !permissionsRequested) {
         registerForPushNotificationsAsync();
       }
     });
