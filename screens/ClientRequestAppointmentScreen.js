@@ -59,6 +59,7 @@ const ClientRequestAppointmentScreen = () => {
     
     // Función para verificar si una fecha es la seleccionada
     const isSelectedDate = (date, selectedDate) => {
+        if (!selectedDate) return false;
         return (
             date.getDate() === selectedDate.getDate() &&
             date.getMonth() === selectedDate.getMonth() &&
