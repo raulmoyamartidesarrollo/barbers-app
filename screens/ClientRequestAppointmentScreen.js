@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ImageBackground, 
 import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore'; 
 import { useUser } from '../services/UserContext'; 
 import { Picker } from '@react-native-picker/picker'; 
+import { Chip } from 'react-native-paper'
 
 const { width: screenWidth } = Dimensions.get('window'); // Obtener el ancho de la pantalla
 
@@ -209,15 +210,22 @@ const ClientRequestAppointmentScreen = () => {
                 </View>
 
                 <Text style={styles.serviceLabel}>Selecciona un servicio:</Text>
-                <Picker
-                    selectedValue={selectedService}
-                    style={styles.picker}
-                    onValueChange={(itemValue) => setSelectedService(itemValue)}>
-                    <Picker.Item label="Selecciona un servicio" value="" />
+                <View style={styles.chipContainer}>
                     {services.map((service) => (
-                        <Picker.Item key={service.id} label={service.nombre} value={service.id} />
+                        <Chip
+                        key={service.id}
+                        icon={selectedService === service.id ? "check" : "information"} // Cambia el ícono cuando esté seleccionado
+                        onPress={() => setSelectedService(selectedService === service.id ? '' : service.id)} // Permite deseleccionar
+                        style={[
+                            styles.chip,
+                            selectedService === service.id && styles.selectedChip, // Aplicar estilo si está seleccionado
+                        ]}
+                    >
+                        {service.nombre}
+                    </Chip>
+                    
                     ))}
-                </Picker>
+                </View>
 
                 <Text style={styles.availableTimesLabel}>Horarios Disponibles:</Text>
                 <ScrollView horizontal style={styles.scrollView}>
@@ -241,40 +249,74 @@ const ClientRequestAppointmentScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    availableTimesLabel: {
+        color: 'white',
+        fontSize: 18, // Aumentar tamaño de la etiqueta de horarios
+        marginBottom: 10,
+        marginTop: 20,
     },
     background: {
         flex: 1,
-        padding: 20,
         justifyContent: 'center',
+        padding: 20,
     },
-    title: {
+    chip: {
+        backgroundColor: '#f0f0f0',
+        margin: 5,
+        width: (screenWidth / 2) - 20, // Asegura que haya dos columnas
+    },
+    chipContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between', // Asegura que los chips estén justificados
+        padding: 10,
+    },
+    confirmButton: {
+        alignItems: 'center',
+        backgroundColor: 'black',
+        borderRadius: 5,
+        padding: 15,
+    },
+    confirmText: {
         color: 'white',
-        fontSize: 24,
         fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20,
+    },
+    container: {
+        flex: 1,
+    },
+    dayButton: {
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 5,
+        height: 30, // Altura del botón
+        padding: 5, 
+        width: 30, // Ancho del botón
+    },
+    dayContainer: {
+        alignItems: 'center',
+        marginHorizontal: 4, // Reducir el margen entre los días
+    },
+    dayText: {
+        color: 'black',
+        fontSize: 16, // Ajustar tamaño del texto del día
+    },
+    disabledDayButton: {
+        backgroundColor: 'lightgray', // Color para los días deshabilitados
+        opacity: 0.6, // Reduce la opacidad para un efecto deshabilitado
     },
     mainContainer: {
-        marginBottom: 20,
         backgroundColor: 'rgba(0, 0, 0, 0.7)', // Fondo negro con 70% de opacidad
-        borderWidth: 5, // Ancho del borde
         borderColor: 'white', // Color del borde
         borderRadius: 10, // Bordes redondeados
+        borderWidth: 5, // Ancho del borde
+        marginBottom: 20,
         padding: 10, // Espaciado interno
     },
     monthIndicator: {
         color: 'white',
         fontSize: 18,
-        textAlign: 'center',
         marginBottom: 10,
-    },
-    navigationContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginVertical: 10,
+        textAlign: 'center',
     },
     navButton: {
         padding: 10,
@@ -283,86 +325,70 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 24, // Aumentar tamaño del texto de navegación
     },
-    weekContainer: {
+    navigationContainer: {
+        alignItems: 'center',
         flexDirection: 'row',
-    },
-    dayContainer: {
-        alignItems: 'center',
-        marginHorizontal: 4, // Reducir el margen entre los días
-    },
-    weekNumberText: {
-        color: 'white',
-        fontSize: 14, 
-    },
-    dayButton: {
-        backgroundColor: 'white',
-        borderRadius: 5,
-        padding: 5, 
-        alignItems: 'center',
-        width: 30, // Ancho del botón
-        height: 30, // Altura del botón
-    },
-    unavailable: {
-        backgroundColor: 'lightgray', // Color para días no disponibles
-    },
-    dayText: {
-        color: 'black',
-        fontSize: 16, // Ajustar tamaño del texto del día
-    },
-    todayButton: {
-        borderWidth: 2,
-        borderColor: 'blue', // Borde azul para el día de hoy
-    },
-    selectedDayButton: {
-        borderWidth: 2,
-        borderColor: 'green', // Borde verde para el día seleccionado
-    },
-    serviceLabel: {
-        color: 'white',
-        marginTop: 20,
-        marginBottom: 10,
-        fontSize: 18, // Aumentar tamaño de la etiqueta de servicio
+        justifyContent: 'space-between',
+        marginVertical: 10,
     },
     picker: {
+        backgroundColor: 'white',
         height: 50,
         width: '100%',
-        backgroundColor: 'white',
-    },
-    availableTimesLabel: {
-        color: 'white',
-        marginTop: 20,
-        marginBottom: 10,
-        fontSize: 18, // Aumentar tamaño de la etiqueta de horarios
     },
     scrollView: {
         flexDirection: 'row',
         marginBottom: 20,
     },
-    timeButton: {
-        backgroundColor: 'white',
-        borderRadius: 5,
-        padding: 10,
-        marginHorizontal: 5,
+    selectedChip: {
+        backgroundColor: '#f0f0f0', // Color negro cuando está seleccionado
+        borderColor: 'green', // Borde verde cuando está seleccionado
+        borderWidth: 3, // Ancho del borde
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    selectedDayButton: {
+        borderColor: 'green', // Borde verde para el día seleccionado
+        borderWidth: 2,
     },
     selectedTime: {
         backgroundColor: 'green',
     },
+    serviceLabel: {
+        color: 'white',
+        fontSize: 18, // Aumentar tamaño de la etiqueta de servicio
+        marginBottom: 10,
+        marginTop: 20,
+    },
+    timeButton: {
+        backgroundColor: 'white',
+        borderRadius: 5,
+        marginHorizontal: 5,
+        padding: 10,
+    },
     timeText: {
         color: 'black',
     },
-    confirmButton: {
-        backgroundColor: 'black',
-        borderRadius: 5,
-        padding: 15,
-        alignItems: 'center',
-    },
-    confirmText: {
+    title: {
         color: 'white',
+        fontSize: 24,
         fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center',
     },
-    disabledDayButton: {
-        backgroundColor: 'lightgray', // Color para los días deshabilitados
-        opacity: 0.6, // Reduce la opacidad para un efecto deshabilitado
+    todayButton: {
+        borderColor: 'blue', // Borde azul para el día de hoy
+        borderWidth: 2,
+    },
+    unavailable: {
+        backgroundColor: 'lightgray', // Color para días no disponibles
+    },
+    weekContainer: {
+        flexDirection: 'row',
+    },
+    weekNumberText: {
+        color: 'white',
+        fontSize: 14, 
     },
 });
 
