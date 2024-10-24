@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ImageBackground, SafeAreaView, Dimensions } from 'react-native';
-import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore'; 
+import { getFirestore, collection, getDocs, addDoc, setDoc } from 'firebase/firestore';
 import { useUser } from '../services/UserContext'; 
 import { Picker } from '@react-native-picker/picker'; 
 import { Chip } from 'react-native-paper'
@@ -15,12 +16,23 @@ const ClientRequestAppointmentScreen = () => {
     const [selectedTime, setSelectedTime] = useState(null);
     const [services, setServices] = useState([]);
     const [selectedService, setSelectedService] = useState('');
+    const [horarios, setHorarios] = useState({});
     const db = getFirestore();
     const { userId } = useUser();
 
     useEffect(() => {
+        const fetchHorarios = async () => {
+            try {
+                const horariosDoc = await firestore().collection('horarios').doc('horariosHabituales').get();
+                setHorarios(horariosDoc.data());
+            } catch (error) {
+                console.error('Error fetching horarios: ', error);
+            }
+        };
+
         loadUnavailableDates();
         loadServices();
+        fetchHorarios();
     }, []);
 
     const loadUnavailableDates = async () => {
@@ -34,6 +46,38 @@ const ClientRequestAppointmentScreen = () => {
         } catch (error) {
             console.error("Error al cargar las fechas no disponibles:", error);
         }
+    };
+
+    const generateAvailableTimes = (dayKey) => {
+        if (!horarios[dayKey]) return;
+
+        const { mañana, tarde } = horarios[dayKey];
+
+        const available = [];
+
+        // Generar horarios para la mañana
+        if (mañana) {
+            available.push(...generateTimeSlots(mañana.inicio, mañana.fin));
+        }
+
+        // Generar horarios para la tarde
+        if (tarde) {
+            available.push(...generateTimeSlots(tarde.inicio, tarde.fin));
+        }
+
+        setAvailableTimes(available);
+    };
+
+    const generateTimeSlots = (startTime, endTime) => {
+        const slots = [];
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+
+        for (let time = start; time <= end; time.setMinutes(time.getMinutes() + 15)) {
+            slots.push(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        }
+
+        return slots;
     };
 
     const loadServices = async () => {
@@ -160,6 +204,108 @@ const ClientRequestAppointmentScreen = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set the time to midnight for comparison
 
+
+    const handleDaySelection = (dayKey) => {
+        setSelectedDay(dayKey);
+        generateAvailableTimes(dayKey);
+    };
+
+
+
+    /**/
+    const insertarHorariosHabituales = async () => {
+        // Definir la estructura de los horarios
+        const horariosHabituales = {
+            Lunes: {
+                mañana: {
+                    inicio: "10:00", // Horario de inicio de la mañana
+                    fin: "14:00"     // Horario de fin de la mañana
+                },
+                tarde: {
+                    inicio: "16:00", 
+                    fin: "20:00"     
+                }
+            },
+            Martes: {
+                mañana: {
+                    inicio: "10:00",
+                    fin: "14:00"
+                },
+                tarde: {
+                    inicio: "16:00",
+                    fin: "20:00"
+                }
+            },
+            Miércoles: {
+                mañana: {
+                    inicio: "10:00",
+                    fin: "14:00"
+                },
+                tarde: {
+                    inicio: "16:00",
+                    fin: "20:00"
+                }
+            },
+            Jueves: {
+                mañana: {
+                    inicio: "10:00",
+                    fin: "14:00"
+                },
+                tarde: {
+                    inicio: "16:00",
+                    fin: "20:00"
+                }
+            },
+            Viernes: {
+                mañana: {
+                    inicio: "10:00",
+                    fin: "14:00"
+                },
+                tarde: {
+                    inicio: "16:00",
+                    fin: "20:00"
+                }
+            },
+            Sábado: {
+                mañana: {
+                    inicio: "10:00",
+                    fin: "14:00"
+                },
+                tarde: {
+                    inicio: "16:00",
+                    fin: "20:00"
+                }
+            },
+            Domingo: {
+                mañana: {
+                    inicio: "10:00",
+                    fin: "14:00"
+                },
+                tarde: {
+                    inicio: "16:00",
+                    fin: "20:00"
+                }
+            }
+        };
+    
+        try {
+            // Insertar el documento en la colección 'horarios' con ID 'horariosHabituales'
+            await firestore()
+                .collection('horarios') 
+                .doc('horariosHabituales') 
+                .set(horariosHabituales); 
+    
+            console.log('Horarios habituales insertados correctamente!');
+        } catch (error) {
+            console.error('Error al insertar horarios: ', error);
+        }
+    };
+    
+    insertarHorariosHabituales();
+
+    /**/
+
+
     return (
         <SafeAreaView style={styles.container}>
             <ImageBackground source={require('../assets/background.jpg')} style={styles.background}>
@@ -170,7 +316,6 @@ const ClientRequestAppointmentScreen = () => {
                         {currentWeek.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()}
                     </Text>
 
-                    {/* Fila de navegación y días de la semana */}
                     <View style={styles.navigationContainer}>
                         <TouchableOpacity onPress={() => changeWeek('previous')} style={styles.navButton}>
                             <Text style={styles.navText}>◀</Text>
@@ -240,18 +385,25 @@ const ClientRequestAppointmentScreen = () => {
                     })}
                 </View>
 
-                <Text style={styles.availableTimesLabel}>Horarios Disponibles:</Text>
-                <ScrollView horizontal style={styles.scrollView}>
+                <View>
+            <Text>Selecciona un día:</Text>
+            {Object.keys(horarios).map((dayKey) => (
+                <TouchableOpacity key={dayKey} onPress={() => handleDaySelection(dayKey)}>
+                    <Text>{dayKey}</Text>
+                </TouchableOpacity>
+            ))}
+            
+            {availableTimes.length > 0 && (
+                <View>
+                    <Text>Horarios Disponibles:</Text>
                     {availableTimes.map((time, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            onPress={() => setSelectedTime(time)}
-                            style={[styles.timeButton, selectedTime === time && styles.selectedTime]}
-                        >
+                        <TouchableOpacity key={index} style={styles.timeButton}>
                             <Text style={styles.timeText}>{time}</Text>
                         </TouchableOpacity>
                     ))}
-                </ScrollView>
+                </View>
+            )}
+        </View>
 
                 <TouchableOpacity onPress={handleConfirmAppointment} style={styles.confirmButton}>
                     <Text style={styles.confirmText}>Confirmar Cita</Text>
