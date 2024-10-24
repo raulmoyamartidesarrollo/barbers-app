@@ -211,20 +211,32 @@ const ClientRequestAppointmentScreen = () => {
 
                 <Text style={styles.serviceLabel}>Selecciona un servicio:</Text>
                 <View style={styles.chipContainer}>
-                    {services.map((service) => (
-                        <Chip
-                        key={service.id}
-                        icon={selectedService === service.id ? "check" : "information"} // Cambia el ícono cuando esté seleccionado
-                        onPress={() => setSelectedService(selectedService === service.id ? '' : service.id)} // Permite deseleccionar
-                        style={[
-                            styles.chip,
-                            selectedService === service.id && styles.selectedChip, // Aplicar estilo si está seleccionado
-                        ]}
-                    >
-                        {service.nombre}
-                    </Chip>
-                    
-                    ))}
+                    {services.map((service) => {
+                        // Calculamos el espacio entre el servicio y el precio
+                        const serviceText = `${service.nombre} - (${service.duracion} Min.)`;
+                        const dots = '.'; // Un solo punto
+                        const maxLength = 30; // Longitud máxima total del chip (ajusta según sea necesario)
+                        const spaceLength = maxLength - serviceText.length - service.precio.length - 3; // 3 para los puntos suspensivos
+
+                        // Creamos la cadena de puntos
+                        const dotsToShow = spaceLength > 0 ? dots.repeat(spaceLength) : '';
+
+                        return (
+                            <Chip
+                                key={service.id}
+                                icon={selectedService === service.id ? "check" : "information"}
+                                onPress={() => setSelectedService(selectedService === service.id ? '' : service.id)}
+                                style={[
+                                    styles.chip,
+                                    selectedService === service.id && styles.selectedChip,
+                                ]}
+                            >
+                                <Text style={styles.chipText}>
+                                    {serviceText} {dotsToShow} {service.precio}€
+                                </Text>
+                            </Chip>
+                        );
+                    })}
                 </View>
 
                 <Text style={styles.availableTimesLabel}>Horarios Disponibles:</Text>
@@ -263,13 +275,17 @@ const styles = StyleSheet.create({
     chip: {
         backgroundColor: '#f0f0f0',
         margin: 5,
-        width: (screenWidth / 2) - 20, // Asegura que haya dos columnas
+        width: '90%',
     },
     chipContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between', // Asegura que los chips estén justificados
         padding: 10,
+    },
+    chipText: {
+        flexShrink: 1, 
+        textAlign: 'left',
     },
     confirmButton: {
         alignItems: 'center',
