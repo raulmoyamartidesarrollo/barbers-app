@@ -1,46 +1,36 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ImageBackground, Platform, Alert } from 'react-native';
+import { View, StyleSheet, Platform, Alert, Image } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, getDoc, doc } from 'firebase/firestore'; // Asegúrate de importar Firestore
-import colors from '../services/colors'; // Asegúrate de que la ruta sea correcta
-import Icon from 'react-native-vector-icons/FontAwesome'; // Asegúrate de importar FontAwesome
-import { useUser } from '../services/UserContext'; // Importa el contexto
+import { getFirestore, getDoc, doc } from 'firebase/firestore';
+import colors from '../services/colors';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { useUser } from '../services/UserContext';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { setUserId } = useUser();  // Obtén la función setUserId del contexto
+    const { setUserId } = useUser();
 
     const auth = getAuth();
 
     const handleLogin = async () => {
         try {
-            // Iniciar sesión con Firebase Authentication
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            
-
-            // Actualizar el userId en el contexto
             setUserId(user.uid);
 
-            // Verificar el tipo de usuario en Firestore
             const db = getFirestore();
             const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
 
             if (userDoc.exists()) {
-                // Si el documento existe en la colección 'usuarios'
                 navigation.navigate('HomeScreenClient');
             } else {
-                // Si no existe en 'usuarios', verifica en 'peluqueros'
                 const peluqueroDoc = await getDoc(doc(db, 'peluqueros', user.uid));
-
                 if (peluqueroDoc.exists()) {
-                    // Si el documento existe en la colección 'peluqueros'
                     navigation.navigate('AdminHomeScreen');
                 } else {
-                    // Si el usuario no pertenece a ninguna colección
                     Alert.alert('Error', 'El usuario no está registrado en ninguna colección.');
                 }
             }
@@ -65,12 +55,12 @@ const LoginScreen = ({ navigation }) => {
     };
 
     return (
-        <ImageBackground 
-            source={require('../assets/background.jpg')} 
-            style={styles.background}
-        >
+        <View style={styles.background}>
             <View style={styles.overlay} />
             <View style={styles.container}>
+                
+                <Image source={require('../assets/new_logo_fondo_negro.png')} style={styles.logo} />
+
                 <TextInput
                     label="Email"
                     value={email}
@@ -120,25 +110,25 @@ const LoginScreen = ({ navigation }) => {
                         mode="contained" 
                         style={styles.socialButton} 
                         labelStyle={styles.buttonLabel}
-                        icon={() => <Icon name="facebook" size={20} color={colors.white} />} // Icono de Facebook
+                        icon={() => <Icon name="facebook" size={20} color={colors.white} />}
                     />
                     <Button 
                         mode="contained" 
                         style={styles.socialButton} 
                         labelStyle={styles.buttonLabel}
-                        icon={() => <Icon name="google" size={20} color={colors.white} />} // Icono de Google
+                        icon={() => <Icon name="google" size={20} color={colors.white} />}
                     />
                     {Platform.OS === 'ios' && (
                         <Button 
                             mode="contained" 
                             style={styles.socialButton} 
                             labelStyle={styles.buttonLabel}
-                            icon={() => <Icon name="apple" size={20} color={colors.white} />} // Icono de Apple
+                            icon={() => <Icon name="apple" size={20} color={colors.white} />}
                         />
                     )}
                 </View>
             </View>
-        </ImageBackground>
+        </View>
     );
 };
 
@@ -147,6 +137,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         padding: 16,
+        backgroundColor: '#000', // Fondo negro
     },
     overlay: {
         position: 'absolute',
@@ -154,7 +145,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(128, 128, 128, 0.5)', // Capa gris transparente
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Capa negra semitransparente
     },
     container: {
         flex: 1,
@@ -162,15 +153,21 @@ const styles = StyleSheet.create({
         padding: 0,
         borderRadius: 10,
     },
+    logo: {
+        width: 200, // Ancho del logo
+        height: 200, // Alto del logo
+        alignSelf: 'center',
+        marginBottom: 24,
+    },
     input: {
         marginBottom: 16,
     },
     button: {
         marginTop: 16,
-        backgroundColor: colors.primary, // Usar color negro
+        backgroundColor: colors.primary,
     },
     buttonLabel: {
-        color: colors.white, // Texto blanco
+        color: colors.white,
     },
     error: {
         color: 'red',
@@ -185,17 +182,17 @@ const styles = StyleSheet.create({
     separator: {
         textAlign: 'center',
         marginVertical: 16,
-        color: colors.white, // Ajustar el color según necesites
+        color: colors.white,
     },
     socialContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around', // Distribuir botones en la fila
+        justifyContent: 'space-around',
         marginTop: 8,
     },
     socialButton: {
-        flex: 1, // Tomar el mismo espacio
-        marginHorizontal: 4, // Espaciado entre los botones
-        backgroundColor: colors.primary, // Usar color negro
+        flex: 1,
+        marginHorizontal: 4,
+        backgroundColor: colors.primary,
     },
     separatorContainer: {
         flexDirection: 'row',
@@ -205,12 +202,12 @@ const styles = StyleSheet.create({
     line: {
         flex: 1,
         height: 2,
-        backgroundColor: colors.white,  // El color de la línea
-        marginHorizontal: 8,  // Espaciado entre la línea y la "ó"
+        backgroundColor: colors.white,
+        marginHorizontal: 8,
     },
     separatorText: {
         textAlign: 'center',
-        color: colors.white,  // El color de la "ó"
+        color: colors.white,
     },
 });
 
