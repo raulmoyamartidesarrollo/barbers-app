@@ -55,6 +55,7 @@ const LoginScreen = ({ navigation }) => {
     };
 
     return (
+        
         <View style={styles.background}>
             <View style={styles.overlay} />
             <View style={styles.container}>
