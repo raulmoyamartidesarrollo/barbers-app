@@ -4,7 +4,7 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { app } from '../services/Firebase';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const ClientServicesScreen = ({ navigation }) => { // Añadir prop para navegación
+const ClientServicesScreen = ({ navigation }) => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,15 +39,11 @@ const ClientServicesScreen = ({ navigation }) => { // Añadir prop para navegaci
   return (
     <SafeAreaView style={styles.container}>
       <ImageBackground
-        source={require('../assets/background.jpg')}
+        source={require('../assets/fondo_generico.png')}
         style={styles.backgroundImage}
         resizeMode='cover'
       >
         <View style={styles.overlay}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="arrow-left" size={20} color="white" />
-            <Text style={styles.backButtonText}> Volver</Text>
-          </TouchableOpacity>
           <Text style={styles.title}>Servicios</Text>
 
           <View style={styles.contentWrapper}>
@@ -70,6 +66,10 @@ const ClientServicesScreen = ({ navigation }) => { // Añadir prop para navegaci
             />
           </View>
         </View>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+  <Icon name="arrow-left" size={20} color="black" />
+  <Text style={styles.backButtonText}> Volver</Text>
+</TouchableOpacity>
       </ImageBackground>
     </SafeAreaView>
   );
@@ -85,15 +85,33 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
   },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'absolute', // Fijo en la parte inferior
+    bottom: 20, // Ajusta este valor según sea necesario
+    left: '10%', // Ajuste de margen a la izquierda
+    right: '10%', // Ajuste de margen a la derecha
+    backgroundColor: 'white', // Fondo blanco
+    padding: 10,
+    borderRadius: 55, // Bordes redondeados
+    justifyContent: 'center',
+    elevation: 3, // Sombra en Android (opcional)
+    shadowColor: 'black', // Sombra en iOS (opcional)
+    shadowOffset: { width: 0, height: 2 }, // Offset de la sombra
+    shadowOpacity: 0.3, // Opacidad de la sombra
+    shadowRadius: 4, // Radio de la sombra
+  },
   overlay: {
     flex: 1,
-    marginHorizontal: 20, // Espaciado lateral de 20 píxeles
-    marginVertical: 20,   // Espaciado superior e inferior de 20 píxeles
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Capa negra con opacidad al 50%
+    marginHorizontal: 20,
+    marginVertical: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 10,
-    borderWidth: 5,       // Borde negro de 5 píxeles
+    borderWidth: 5,
     borderColor: 'black',
     padding: 20,
+    justifyContent: 'flex-start', // Alinear el contenido hacia arriba
   },
   title: {
     fontSize: 30,
@@ -119,7 +137,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   dotsContainer: {
-    flex: 1, // Esto permitirá que el contenedor de puntos ocupe el espacio disponible
+    flex: 1,
     justifyContent: 'center',
   },
   dots: {
@@ -140,10 +158,17 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    position: 'absolute', // Fijo en la parte inferior
+    bottom: 20, // Ajusta este valor según sea necesario
+    left: '10%', // Ajuste de margen a la izquierda
+    right: '10%', // Ajuste de margen a la derecha
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 10,
+    justifyContent: 'center',
   },
   backButtonText: {
-    color: 'white',
+    color: '#000',
     marginLeft: 5,
   },
 });

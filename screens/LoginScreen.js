@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Platform, Alert, Image } from 'react-native';
+import { View, StyleSheet, Platform, Alert, Image, ImageBackground } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, getDoc, doc } from 'firebase/firestore';
@@ -55,12 +55,14 @@ const LoginScreen = ({ navigation }) => {
     };
 
     return (
-        
-        <View style={styles.background}>
+        <ImageBackground 
+            source={require('../assets/fondo_generico.png')} 
+            style={styles.background} 
+        >
             <View style={styles.overlay} />
             <View style={styles.container}>
                 
-                <Image source={require('../assets/new_logo_fondo_negro.png')} style={styles.logo} />
+                <Image source={require('../assets/logo_sin_fondo_blanco.png')} style={styles.logo} />
 
                 <TextInput
                     label="Email"
@@ -129,7 +131,7 @@ const LoginScreen = ({ navigation }) => {
                     )}
                 </View>
             </View>
-        </View>
+        </ImageBackground>
     );
 };
 
@@ -137,8 +139,6 @@ const styles = StyleSheet.create({
     background: {
         flex: 1,
         justifyContent: 'center',
-        padding: 16,
-        backgroundColor: '#000', // Fondo negro
     },
     overlay: {
         position: 'absolute',
@@ -151,12 +151,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
-        padding: 0,
+        padding: 16,
         borderRadius: 10,
     },
     logo: {
-        width: 200, // Ancho del logo
-        height: 200, // Alto del logo
+        width: 200,
+        height: 200,
         alignSelf: 'center',
         marginBottom: 24,
     },
@@ -175,25 +175,10 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     resetPassword: {
-        color: 'blue',
+        color: '#fff',
         marginTop: 16,
         textAlign: 'center',
         textDecorationLine: 'underline',
-    },
-    separator: {
-        textAlign: 'center',
-        marginVertical: 16,
-        color: colors.white,
-    },
-    socialContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 8,
-    },
-    socialButton: {
-        flex: 1,
-        marginHorizontal: 4,
-        backgroundColor: colors.primary,
     },
     separatorContainer: {
         flexDirection: 'row',
@@ -209,6 +194,16 @@ const styles = StyleSheet.create({
     separatorText: {
         textAlign: 'center',
         color: colors.white,
+    },
+    socialContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 8,
+    },
+    socialButton: {
+        flex: 1,
+        marginHorizontal: 4,
+        backgroundColor: colors.primary,
     },
 });
 

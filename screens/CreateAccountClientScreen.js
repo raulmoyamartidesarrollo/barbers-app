@@ -1,63 +1,222 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { useUser } from '../services/UserContext'; // Asegúrate de que la ruta sea correcta
-import { firestore } from '../services/Firebase'; // Asegúrate de que la ruta sea correcta
-import { doc, onSnapshot } from 'firebase/firestore'; // Importa las funciones necesarias de Firestore
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ImageBackground } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import { auth, db, firestore } from '../services/Firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import colors from '../services/colors';
 
-const ClientMyAccountScreen = () => {
-    const { userId } = useUser(); // Usa el hook para obtener userId
-    const [userData, setUserData] = useState(null); // Estado para los datos del usuario
+const CreateAccountClientScreen = ({ navigation }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
-    useEffect(() => {
-        if (userId) {
-            const unsubscribe = onSnapshot(doc(firestore, 'usuarios', userId), (doc) => {
-                console.log('Datos del usuario:', doc.data())
-                if (doc.exists()) {
-                    
-                    setUserData(doc.data()); // Establece los datos del usuario
-                } else {
-                    console.log('No such document!');
-                }
-            }, (error) => {
-                console.log('Error getting document:', error);
+    const handleCreateAccount = async () => {
+        if (!email) {
+            Alert.alert('Error', 'Por favor ingresa un correo electrónico.');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert('Error', 'Por favor ingresa un correo electrónico válido.');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Las contraseñas no coinciden.');
+            return;
+        }
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            console.log("Cuenta creada exitosamente:", user);
+
+            await setDoc(doc(firestore, 'usuarios', user.uid), {
+                apellidos: '',
+                email: user.email,
+                nombre: '',
+                telefono: '',
             });
 
-            return () => unsubscribe(); // Desuscribirse en el desmontaje del componente
+            Alert.alert(
+                'Registro exitoso',
+                'Te has registrado correctamente.',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            navigation.navigate('HomeScreenClient');
+                        }
+                    }
+                ]
+            );
+        } catch (error) {
+            console.error("Error al crear cuenta:", error);
+            Alert.alert('Error', error.message);
         }
-    }, [userId]);
+    };
 
     return (
-        <ScrollView>
-            <View>
-                {userData ? (
-                    <>
-                        <TextInput
-                            placeholder="Nombre"
-                            value={userData.nombre || ''} // Asegúrate de manejar el caso donde userData podría no tener un valor
-                            onChangeText={(text) => setUserData((prev) => ({ ...prev, nombre: text }))}
-                        />
-                        <TextInput
-                            placeholder="Apellidos"
-                            value={userData.apellidos || ''}
-                            onChangeText={(text) => setUserData((prev) => ({ ...prev, apellidos: text }))}
-                        />
-                        <TextInput
-                            placeholder="Email"
-                            value={userData.email || ''}
-                            onChangeText={(text) => setUserData((prev) => ({ ...prev, email: text }))}
-                        />
-                        <TextInput
-                            placeholder="Teléfono"
-                            value={userData.telefono || ''}
-                            onChangeText={(text) => setUserData((prev) => ({ ...prev, telefono: text }))}
-                        />
-                    </>
-                ) : (
-                    <Text>No hay datos de usuario disponibles.</Text>
-                )}
+        <ImageBackground 
+            source={require('../assets/fondo_generico.png')} 
+            style={styles.background}
+        >
+            {/* Botón de volver atrás */}
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <FontAwesome name="arrow-left" size={24} color="#fff" />
+                <Text style={styles.backButtonText}>Volver</Text>
+            </TouchableOpacity>
+
+            <View style={styles.container}>
+                <Text style={styles.title}>Crear Cuenta</Text>
+                <Image source={require('../assets/logo_sin_fondo_blanco.png')} style={styles.logo} />
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholderTextColor="#fff"
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Contraseña"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    placeholderTextColor="#fff"
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Confirmar Contraseña"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    placeholderTextColor="#fff"
+                />
+                <TouchableOpacity
+                    onPress={handleCreateAccount}
+                    style={styles.button}
+                >
+                    <Text style={styles.buttonText}>Crear Cuenta</Text>
+                </TouchableOpacity>
+
+                <View style={styles.separatorContainer}>
+                    <View style={styles.separator} />
+                    <Text style={styles.separatorText}>ó</Text>
+                    <View style={styles.separator} />
+                </View>
+
+                <Text style={styles.socialText}>Crear cuenta con</Text>
+                <View style={styles.socialButtons}>
+                    <TouchableOpacity style={styles.socialButton}>
+                        <FontAwesome name="google" size={24} color="red" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.socialButton}>
+                        <FontAwesome name="facebook" size={24} color="blue" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.socialButton}>
+                        <FontAwesome name="apple" size={24} color="black" />
+                    </TouchableOpacity>
+                </View>
             </View>
-        </ScrollView>
+        </ImageBackground>
     );
 };
 
-export default ClientMyAccountScreen;
+const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 16,
+    },
+    backButton: {
+        position: 'absolute',
+        top: 40,  // Ajuste para la parte superior de la pantalla
+        left: 20, // Ajuste para la parte izquierda de la pantalla
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    backButtonText: {
+        color: '#fff',
+        marginLeft: 8,
+        fontSize: 16,
+    },
+    container: {
+        justifyContent: 'center',
+        padding: 16,
+        alignItems: 'center',
+    },
+    logo: {
+        width: 150,
+        height: 150,
+        resizeMode: 'contain',
+        marginBottom: 20,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 24,
+        color: '#fff',
+    },
+    input: {
+        height: 40,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        marginBottom: 25,
+        paddingHorizontal: 8,
+        backgroundColor: '#000',
+        borderRadius: 5,
+        color: '#fff',
+        width: '100%',
+    },
+    button: {
+        backgroundColor: colors.primary,
+        padding: 10,
+        borderRadius: 25,
+        marginBottom: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: colors.white,
+        fontSize: 16,
+    },
+    separatorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 10,
+    },
+    separator: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#fff',
+    },
+    separatorText: {
+        marginHorizontal: 8,
+        fontSize: 16,
+        color: '#fff',
+    },
+    socialText: {
+        textAlign: 'center',
+        marginVertical: 10,
+        fontSize: 16,
+        color: '#fff',
+    },
+    socialButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+    },
+    socialButton: {
+        padding: 15,
+        backgroundColor: '#000',
+        borderRadius: 50,
+    },
+});
+
+export default CreateAccountClientScreen;

@@ -5,8 +5,9 @@ import { getFirestore, collection, getDocs, addDoc, setDoc } from 'firebase/fire
 import { useUser } from '../services/UserContext'; 
 import { Picker } from '@react-native-picker/picker'; 
 import { Chip } from 'react-native-paper'
+import Icon from 'react-native-vector-icons/FontAwesome';
 
-const { width: screenWidth } = Dimensions.get('window'); // Obtener el ancho de la pantalla
+const { width: screenWidth } = Dimensions.get('window'); 
 
 const ClientRequestAppointmentScreen = () => {
     const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -303,12 +304,14 @@ const ClientRequestAppointmentScreen = () => {
     
     insertarHorariosHabituales();
 
-    /**/
+    const handleGoBack = () => {
+        navigation.goBack(); 
+    };
 
 
     return (
         <SafeAreaView style={styles.container}>
-            <ImageBackground source={require('../assets/background.jpg')} style={styles.background}>
+            <ImageBackground source={require('../assets/fondo_generico.png')} style={styles.background}>
                 <Text style={styles.title}>Solicitar Cita</Text>
 
                 <View style={styles.mainContainer}>
@@ -405,9 +408,14 @@ const ClientRequestAppointmentScreen = () => {
             )}
         </View>
 
-                <TouchableOpacity onPress={handleConfirmAppointment} style={styles.confirmButton}>
-                    <Text style={styles.confirmText}>Confirmar Cita</Text>
-                </TouchableOpacity>
+        <TouchableOpacity onPress={handleConfirmAppointment} style={styles.confirmButton}>
+                <Icon name="check" size={20} color="#fff" />
+                <Text style={styles.confirmText}> Confirmar Cita</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleGoBack} style={styles.confirmButton}>
+                <Icon name="arrow-left" size={20} color="#fff" />
+                <Text style={styles.confirmText}> Volver Atrás</Text>
+            </TouchableOpacity>
             </ImageBackground>
         </SafeAreaView>
     );
@@ -424,6 +432,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         padding: 20,
+    },
+    backButton: {
+        backgroundColor: 'gray', // Cambia el color si lo deseas
+        padding: 15,
+        alignItems: 'center',
+    },
+    backButtonText: {
+        color: 'white',
+        fontSize: 16,
     },
     chip: {
         backgroundColor: '#f0f0f0',
@@ -442,12 +459,14 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         alignItems: 'center',
-        backgroundColor: 'black',
+        backgroundColor: '#fff',
         borderRadius: 5,
         padding: 15,
+        borderRadius:55,
+        marginBottom:15,
     },
     confirmText: {
-        color: 'white',
+        color: '#000',
         fontWeight: 'bold',
     },
     container: {

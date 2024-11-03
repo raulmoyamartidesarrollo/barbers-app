@@ -123,7 +123,7 @@ const ClientMyAccountScreen = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={{ flex: 1 }}> 
                 <ImageBackground
-                    source={require('../assets/background.jpg')} 
+                    source={require('../assets/fondo_generico.png')} 
                     style={styles.background}
                 >
                     <View style={styles.overlay}>
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flexGrow: 1,
-        backgroundColor: 'rgba(211, 211, 211, 0.8)',
+        backgroundColor: 'rgba(211, 211, 211, 0.5)',
         width: '90%', 
         height: '70%',
         marginHorizontal: 10,

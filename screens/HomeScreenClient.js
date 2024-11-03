@@ -30,142 +30,99 @@ export default function HomeScreenClient() {
         }
     };
 
-    const handleMyBookings = () => {
-        navigation.navigate('MybookingsClient');
+    const handleNavigation = (screen) => {
+        navigation.navigate(screen);
     };
 
-    const handleBookingNow = () => {
-        navigation.navigate('ClientRequestAppointment');
-    };
-
-    const handleMyAccount = () => {
-        navigation.navigate('ClientMyAccountScreen');
-    };
-
-    const handleHairSalon = () => {
-        navigation.navigate('ClientHairSalonScreen');
-    };
-
-    const handleServices = () => {
-        navigation.navigate('ClientServicesScreen');
-    };
-
-    const handleContact = () => {
-        navigation.navigate('ClientContactScreen');
-    };
-
- 
     const handleLogout = () => {
-      Alert.alert(
-          'Cerrar sesión',
-          '¿Estás seguro de que deseas cerrar sesión?',
-          [
-              {
-                  text: 'Cancelar',
-                  style: 'cancel',
-              },
-              {
-                  text: 'Confirmar',
-                  onPress: () => {
-                      signOut(auth).then(() => {
-                          console.log('Sesión cerrada');
-                          logout(); // Llama a la función logout para restablecer el estado
-                          navigation.navigate('Login'); // Asegúrate de usar el nombre correcto aquí
-                      }).catch((error) => {
-                          console.error('Error al cerrar sesión:', error);
-                      });
-                  },
-              },
-          ],
-          { cancelable: false }
-      );
-  };
+        Alert.alert(
+            'Cerrar sesión',
+            '¿Estás seguro de que deseas cerrar sesión?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Confirmar',
+                    onPress: () => {
+                        signOut(auth).then(() => {
+                            console.log('Sesión cerrada');
+                            navigation.navigate('Login');
+                        }).catch((error) => {
+                            console.error('Error al cerrar sesión:', error);
+                        });
+                    },
+                },
+            ],
+            { cancelable: false }
+        );
+    };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => {}}>
-                    <Icon name="user" size={24} color="white" />
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.imageContainer}>
-                <ImageBackground
-                    source={require('../assets/background.jpg')}
-                    style={styles.backgroundImage}
-                    resizeMode='cover'
-                >
-                    <View style={styles.overlay} />
-
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Última cita</Text>
-                        <Text style={styles.cardText}>Fecha: {lastBooking.date}</Text>
-                        <Text style={styles.cardText}>Hora: {lastBooking.time}</Text>
-                        <Text style={styles.cardText}>Servicio: {lastBooking.service}</Text>
-                        <Text style={styles.cardText}>
-                            Estado: <Text style={[styles.cardStatus, { color: getStatusColor(lastBooking.status) }]}>
-                                {lastBooking.status}
-                            </Text>
+        <ImageBackground
+            source={require('../assets/fondo_generico.png')}
+            style={styles.backgroundImage}
+            resizeMode='cover'
+        >
+            <View style={styles.overlay} />
+            <View style={styles.container}>
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Última cita</Text>
+                    <Text style={styles.cardText}>Fecha: {lastBooking.date}</Text>
+                    <Text style={styles.cardText}>Hora: {lastBooking.time}</Text>
+                    <Text style={styles.cardText}>Servicio: {lastBooking.service}</Text>
+                    <Text style={styles.cardText}>
+                        Estado: <Text style={[styles.cardStatus, { color: getStatusColor(lastBooking.status) }]}>
+                            {lastBooking.status}
                         </Text>
-                        {lastBooking.status === 'pendiente' && (
-                            <TouchableOpacity style={styles.editOption} onPress={() => { /* Lógica para editar cita */ }}>
-                                <Icon name="pencil" size={20} color="white" />
-                                <Text style={styles.editText}>Editar cita</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </ImageBackground>
-            </View>
+                    </Text>
+                    {lastBooking.status === 'pendiente' && (
+                        <TouchableOpacity style={styles.editOption} onPress={() => { /* Lógica para editar cita */ }}>
+                            <Icon name="pencil" size={20} color="white" />
+                            <Text style={styles.editText}>Editar cita</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
 
-            <View style={styles.content}>
-                <TouchableOpacity style={styles.circleOption} onPress={handleMyBookings}>
-                    <Icon name="calendar" size={30} color="black" />
-                    <Text>Mis citas</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.circleOption} onPress={handleBookingNow}>
-                    <Icon name="plus" size={30} color="black" />
-                    <Text>Pedir cita</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.circleOption} onPress={handleMyAccount}>
-                    <Icon name="user" size={30} color="black" />
-                    <Text>Mi Cuenta</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.circleOption} onPress={handleHairSalon}>
-                    <Icon name="scissors" size={30} color="black" />
-                    <Text>Peluquería</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.circleOption} onPress={handleServices}>
-                    <Icon name="list" size={30} color="black" />
-                    <Text>Servicios</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.circleOption} onPress={handleContact}>
-                    <Icon name="phone" size={30} color="black" />
-                    <Text>Contacto</Text>
+                <View style={styles.content}>
+                    <TouchableOpacity style={styles.circleOption} onPress={() => handleNavigation('MybookingsClient')}>
+                        <Icon name="calendar" size={30} color="black" />
+                        <Text>Mis citas</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.circleOption} onPress={() => handleNavigation('ClientRequestAppointment')}>
+                        <Icon name="plus" size={30} color="black" />
+                        <Text>Pedir cita</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.circleOption} onPress={() => handleNavigation('ClientMyAccountScreen')}>
+                        <Icon name="user" size={30} color="black" />
+                        <Text>Mi Cuenta</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.circleOption} onPress={() => handleNavigation('ClientHairSalonScreen')}>
+                        <Icon name="scissors" size={30} color="black" />
+                        <Text>Peluquería</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.circleOption} onPress={() => handleNavigation('ClientServicesScreen')}>
+                        <Icon name="list" size={30} color="black" />
+                        <Text>Servicios</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.circleOption} onPress={() => handleNavigation('ClientContactScreen')}>
+                        <Icon name="phone" size={30} color="black" />
+                        <Text>Contacto</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity style={styles.logoutOption} onPress={handleLogout}>
+                    <Text style={styles.logoutText}>Cerrar sesión</Text>
+                    <Icon name="sign-out" size={20} color="white" style={styles.logoutIcon} />
                 </TouchableOpacity>
             </View>
-
-            <TouchableOpacity style={styles.logoutOption} onPress={handleLogout}>
-                <Icon name="sign-out" size={20} color="white" />
-                <Text style={styles.logoutText}>Cerrar sesión</Text>
-            </TouchableOpacity>
-        </View>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    header: {
-        backgroundColor: 'black',
-        padding: 10,
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-    },
-    imageContainer: {
-        flex: 1,
         justifyContent: 'center',
+        alignItems: 'center',
     },
     backgroundImage: {
         flex: 1,
@@ -180,17 +137,16 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     card: {
-        position: 'absolute',
-        top: '50%',
-        left: '5%',
-        right: '5%',
-        marginTop: -100,
+        width: '80%', // Ocupa el 80% del ancho disponible
+        marginLeft: '10%', // Margen izquierdo del 10%
+        marginRight: '10%', // Margen derecho del 10%
         padding: 20,
         backgroundColor: 'rgba(169, 169, 169, 0.8)',
         borderRadius: 15,
         elevation: 5,
         alignItems: 'center',
         justifyContent: 'center',
+        marginBottom: 20,
     },
     cardTitle: {
         fontSize: 20,
@@ -208,60 +164,54 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     content: {
-        flex: 1,
-        backgroundColor: 'white',
-        justifyContent: 'center',
-        alignItems: 'center',
         flexDirection: 'row',
         flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'center',
         padding: 20,
     },
     circleOption: {
-        width: '28%',  // Ancho proporcional para que quepan 3 opciones
+        width: '28%',
         height: 100,
         borderRadius: 50,
         backgroundColor: '#f0f0f0',
         justifyContent: 'center',
         alignItems: 'center',
-        margin: '2%',  // Espaciado proporcional
+        margin: '2%',
         elevation: 3,
     },
     logoutOption: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: 'black', // Fondo negro
-        borderRadius: 15,
-        margin: 10,
+        width: '80%', // Ocupa el 80% del ancho
+        marginLeft: '10%', // Margen izquierdo del 10%
+        marginRight: '10%', // Margen derecho del 10%
+        flexDirection: 'row', // Alineación horizontal
+        justifyContent: 'center', // Centrar contenido
+        alignItems: 'center', // Centrar verticalmente
+        padding: 15,
+        backgroundColor: '#fff',
+        borderRadius: 55,
         elevation: 3,
     },
     logoutText: {
-        color: 'white', // Texto blanco
-        marginLeft: 5,
+        color: '#000',
     },
-    separator: {
-        height: 3,
-        backgroundColor: 'black',
-        marginVertical: 10,
-    },
-    credits: {
-        textAlign: 'center',
-        color: 'black',
-        marginVertical: 10,
+    logoutIcon: {
+        marginLeft: 20, // Separación de 5 entre el texto y el icono
+        color: '#000',
     },
     editOption: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 10,
-        backgroundColor: 'black', // Fondo negro
+        backgroundColor: 'black',
         borderRadius: 15,
-        marginTop: 10, // Espacio superior
+        marginTop: 10,
         elevation: 3,
     },
     editText: {
-        color: 'white', // Texto blanco
+        color: 'white',
         marginLeft: 5,
     },
 });
+

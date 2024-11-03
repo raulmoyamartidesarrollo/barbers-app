@@ -1,9 +1,8 @@
-// src/colors.js
-
 const colors = {
-    primary: '#ffffff', // Negro
-    black: '#000000', // Blanco
-    // Agrega otros colores que necesites aquí
+    primary: '#ffffff',
+    black: '#000000', 
+    blanco:'#ffffff',
+   
 };
 
 export default colors;
