@@ -6,6 +6,9 @@ import { useUser } from '../services/UserContext';
 import { Picker } from '@react-native-picker/picker'; 
 import { Chip } from 'react-native-paper'
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { useNavigation } from '@react-navigation/native';
+
+
 
 const { width: screenWidth } = Dimensions.get('window'); 
 
@@ -20,6 +23,7 @@ const ClientRequestAppointmentScreen = () => {
     const [horarios, setHorarios] = useState({});
     const db = getFirestore();
     const { userId } = useUser();
+    const navigation = useNavigation();
 
     useEffect(() => {
         const fetchHorarios = async () => {
@@ -48,6 +52,7 @@ const ClientRequestAppointmentScreen = () => {
             console.error("Error al cargar las fechas no disponibles:", error);
         }
     };
+
 
     const generateAvailableTimes = (dayKey) => {
         if (!horarios[dayKey]) return;
@@ -215,97 +220,49 @@ const ClientRequestAppointmentScreen = () => {
 
     /**/
     const insertarHorariosHabituales = async () => {
-        // Definir la estructura de los horarios
         const horariosHabituales = {
             Lunes: {
-                mañana: {
-                    inicio: "10:00", // Horario de inicio de la mañana
-                    fin: "14:00"     // Horario de fin de la mañana
-                },
-                tarde: {
-                    inicio: "16:00", 
-                    fin: "20:00"     
-                }
+                mañana: { inicio: "10:00", fin: "14:00" },
+                tarde: { inicio: "16:00", fin: "20:00" }
             },
             Martes: {
-                mañana: {
-                    inicio: "10:00",
-                    fin: "14:00"
-                },
-                tarde: {
-                    inicio: "16:00",
-                    fin: "20:00"
-                }
+                mañana: { inicio: "10:00", fin: "14:00" },
+                tarde: { inicio: "16:00", fin: "20:00" }
             },
             Miércoles: {
-                mañana: {
-                    inicio: "10:00",
-                    fin: "14:00"
-                },
-                tarde: {
-                    inicio: "16:00",
-                    fin: "20:00"
-                }
+                mañana: { inicio: "10:00", fin: "14:00" },
+                tarde: { inicio: "16:00", fin: "20:00" }
             },
             Jueves: {
-                mañana: {
-                    inicio: "10:00",
-                    fin: "14:00"
-                },
-                tarde: {
-                    inicio: "16:00",
-                    fin: "20:00"
-                }
+                mañana: { inicio: "10:00", fin: "14:00" },
+                tarde: { inicio: "16:00", fin: "20:00" }
             },
             Viernes: {
-                mañana: {
-                    inicio: "10:00",
-                    fin: "14:00"
-                },
-                tarde: {
-                    inicio: "16:00",
-                    fin: "20:00"
-                }
+                mañana: { inicio: "10:00", fin: "14:00" },
+                tarde: { inicio: "16:00", fin: "20:00" }
             },
             Sábado: {
-                mañana: {
-                    inicio: "10:00",
-                    fin: "14:00"
-                },
-                tarde: {
-                    inicio: "16:00",
-                    fin: "20:00"
-                }
+                mañana: { inicio: "10:00", fin: "14:00" },
+                tarde: { inicio: "16:00", fin: "20:00" }
             },
             Domingo: {
-                mañana: {
-                    inicio: "10:00",
-                    fin: "14:00"
-                },
-                tarde: {
-                    inicio: "16:00",
-                    fin: "20:00"
-                }
+                mañana: { inicio: "10:00", fin: "14:00" },
+                tarde: { inicio: "16:00", fin: "20:00" }
             }
         };
     
         try {
-            // Insertar el documento en la colección 'horarios' con ID 'horariosHabituales'
-            await firestore()
-                .collection('horarios') 
-                .doc('horariosHabituales') 
-                .set(horariosHabituales); 
-    
+            await setDoc(doc(collection(db, 'horarios'), 'horariosHabituales'), horariosHabituales);
             console.log('Horarios habituales insertados correctamente!');
         } catch (error) {
-            console.error('Error al insertar horarios: ', error);
+            console.error('Error al insertar horariosHabituales: ', error);
         }
     };
     
     insertarHorariosHabituales();
 
     const handleGoBack = () => {
-        navigation.goBack(); 
+        navigation.navigate('HomeScreenClient');
     };
 
 
@@ -407,17 +364,19 @@ const ClientRequestAppointmentScreen = () => {
                 </View>
             )}
         </View>
-
-        <TouchableOpacity onPress={handleConfirmAppointment} style={styles.confirmButton}>
-                <Icon name="check" size={20} color="#fff" />
-                <Text style={styles.confirmText}> Confirmar Cita</Text>
+        <View style={styles.buttonContainer}>
+        <TouchableOpacity onPress={handleConfirmAppointment} style={styles.button}>
+                <Icon name="check" size={20} color="#000" />
+                <Text style={styles.buttonText}> Confirmar Cita</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleGoBack} style={styles.confirmButton}>
-                <Icon name="arrow-left" size={20} color="#fff" />
-                <Text style={styles.confirmText}> Volver Atrás</Text>
+            <TouchableOpacity onPress={handleGoBack} style={styles.button}>
+                <Icon name="arrow-left" size={20} color="#000" />
+                <Text style={styles.buttonText}> Volver Atrás</Text>
             </TouchableOpacity>
+        </View>
             </ImageBackground>
         </SafeAreaView>
+
     );
 };
 
@@ -442,6 +401,28 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
     },
+    button: {
+        backgroundColor: '#fff',         // Fondo blanco
+        paddingVertical: 10,             // Ajuste de padding vertical
+        paddingHorizontal: 20,           // Ajuste de padding horizontal
+        borderRadius: 8,                 // Bordes redondeados
+        marginTop: 20,                   // Margen superior
+        alignItems: 'center',            // Centra el contenido horizontalmente
+        justifyContent: 'center',        // Centra el contenido verticalmente
+        flexDirection: 'row',            // Alinea ícono y texto en fila
+      },
+      buttonContainer: {
+        flexDirection: 'row',            // Coloca los botones en una fila
+        justifyContent: 'space-between', // Espacio entre los botones
+        paddingHorizontal: 10,           // Ajusta el espacio lateral
+        marginTop: 20,
+      },
+      buttonText: {
+        color: '#000',                   // Color de texto negro
+        fontSize: 16,
+        textAlign: 'center',
+        marginLeft: 8,                   // Espacio entre el ícono y el texto
+      },
     chip: {
         backgroundColor: '#f0f0f0',
         margin: 5,
@@ -565,11 +546,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     todayButton: {
-        borderColor: 'blue', // Borde azul para el día de hoy
+        borderColor: 'blue', 
         borderWidth: 2,
     },
     unavailable: {
-        backgroundColor: 'lightgray', // Color para días no disponibles
+        backgroundColor: 'lightgray', 
     },
     weekContainer: {
         flexDirection: 'row',
