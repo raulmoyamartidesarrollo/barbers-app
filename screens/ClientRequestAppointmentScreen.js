@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
-
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ImageBackground, SafeAreaView, Dimensions } from 'react-native';
-import { getFirestore, collection, getDocs, addDoc, setDoc } from 'firebase/firestore';
-import { useUser } from '../services/UserContext'; 
-import { Picker } from '@react-native-picker/picker'; 
-import { Chip } from 'react-native-paper'
+import { getFirestore, collection, getDocs, addDoc,doc, getDoc  } from 'firebase/firestore';
+import { useUser } from '../services/UserContext';
+import { Picker } from '@react-native-picker/picker';
+import { Chip } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
+import { db } from '../services/Firebase';
 
 
-
-const { width: screenWidth } = Dimensions.get('window'); 
+const { width: screenWidth } = Dimensions.get('window');
 
 const ClientRequestAppointmentScreen = () => {
     const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -28,8 +27,10 @@ const ClientRequestAppointmentScreen = () => {
     useEffect(() => {
         const fetchHorarios = async () => {
             try {
-                const horariosDoc = await firestore().collection('horarios').doc('horariosHabituales').get();
-                setHorarios(horariosDoc.data());
+                const horariosDoc = await getDocs(collection(db, 'horarios'));
+                horariosDoc.forEach((doc) => {
+                    setHorarios(doc.data());
+                });
             } catch (error) {
                 console.error('Error fetching horarios: ', error);
             }
@@ -43,34 +44,40 @@ const ClientRequestAppointmentScreen = () => {
     const loadUnavailableDates = async () => {
         try {
             const dates = [];
-            const querySnapshot = await getDocs(collection(db, 'fechas_no_disponibles'));
-            querySnapshot.forEach(doc => {
-                dates.push(doc.data().fecha.toDate().toISOString().split('T')[0]);
-            });
-            setUnavailableDates(dates);
+            // Obtener el documento con ID 'fechas' dentro de la colección 'fechas_no_disponibles'
+            const docRef = doc(db, 'fechas_no_disponibles', 'fechas'); // Acceder al documento 'fechas'
+            const docSnap = await getDoc(docRef); // Obtener el documento
+        
+            // Verificar si el documento existe
+            if (docSnap.exists()) {
+                const docData = docSnap.data(); // Obtener los datos del documento
+        
+                // Recorrer todos los campos de fecha (fecha_01, fecha_02, etc.)
+                Object.keys(docData).forEach(field => {
+                    const fieldValue = docData[field];
+        
+                    // Verificar si el campo es un Timestamp y convertirlo a fecha
+                    if (fieldValue && fieldValue.toDate) {
+                        dates.push(fieldValue.toDate().toISOString().split('T')[0]); // Formato YYYY-MM-DD
+                    }
+                });
+        
+                // Almacenar las fechas no disponibles
+                setUnavailableDates(dates);
+            } else {
+                console.log("El documento 'fechas' no existe");
+            }
         } catch (error) {
             console.error("Error al cargar las fechas no disponibles:", error);
         }
     };
 
-
     const generateAvailableTimes = (dayKey) => {
         if (!horarios[dayKey]) return;
-
         const { mañana, tarde } = horarios[dayKey];
-
         const available = [];
-
-        // Generar horarios para la mañana
-        if (mañana) {
-            available.push(...generateTimeSlots(mañana.inicio, mañana.fin));
-        }
-
-        // Generar horarios para la tarde
-        if (tarde) {
-            available.push(...generateTimeSlots(tarde.inicio, tarde.fin));
-        }
-
+        if (mañana) available.push(...generateTimeSlots(mañana.inicio, mañana.fin));
+        if (tarde) available.push(...generateTimeSlots(tarde.inicio, tarde.fin));
         setAvailableTimes(available);
     };
 
@@ -78,11 +85,9 @@ const ClientRequestAppointmentScreen = () => {
         const slots = [];
         const start = new Date(`1970-01-01T${startTime}:00`);
         const end = new Date(`1970-01-01T${endTime}:00`);
-
         for (let time = start; time <= end; time.setMinutes(time.getMinutes() + 15)) {
             slots.push(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         }
-
         return slots;
     };
 
@@ -98,56 +103,6 @@ const ClientRequestAppointmentScreen = () => {
             console.error("Error al cargar los servicios:", error);
         }
     };
-    const isToday = (date) => {
-        const todayDate = new Date();
-        return (
-            date.getDate() === todayDate.getDate() &&
-            date.getMonth() === todayDate.getMonth() &&
-            date.getFullYear() === todayDate.getFullYear()
-        );
-    };
-    
-    // Función para verificar si una fecha es la seleccionada
-    const isSelectedDate = (date, selectedDate) => {
-        if (!selectedDate) return false;
-        return (
-            date.getDate() === selectedDate.getDate() &&
-            date.getMonth() === selectedDate.getMonth() &&
-            date.getFullYear() === selectedDate.getFullYear()
-        );
-    };
-    
-    // Aplicación de estilos en el botón de día
-    const getDayButtonStyle = (date, selectedDate) => {
-        if (isToday(date)) {
-            return [styles.dayButton, styles.todayButton];
-        } else if (isSelectedDate(date, selectedDate)) {
-            return [styles.dayButton, styles.selectedDayButton];
-        } else {
-            return styles.dayButton;
-        }
-    };
-
-    const loadAvailableTimes = async (day) => {
-        try {
-            const times = [];
-            const querySnapshot = await getDocs(collection(db, 'reservas'));
-            querySnapshot.forEach(doc => {
-                const reservationDate = doc.data().fecha.toDate().toISOString().split('T')[0];
-                const reservationTime = doc.data().hora;
-                if (reservationDate === day.toISOString().split('T')[0]) {
-                    times.push(reservationTime);
-                }
-            });
-
-            const allTimes = generateAllTimes();
-            const availableTimes = allTimes.filter(time => !times.includes(time));
-            setAvailableTimes(availableTimes);
-            setSelectedTime(null);
-        } catch (error) {
-            console.error("Error al cargar los horarios disponibles:", error);
-        }
-    };
 
     const changeWeek = (direction) => {
         const newWeek = new Date(currentWeek);
@@ -157,13 +112,83 @@ const ClientRequestAppointmentScreen = () => {
 
     const handleDayPress = async (day) => {
         setSelectedDate(day);
-        await loadAvailableTimes(day);
+        const dayOfWeek = day.toLocaleDateString('es-ES', { weekday: 'long' });  // Obtiene el día de la semana (ej. "Lunes", "Martes", etc.)
+        await loadAvailableTimes(dayOfWeek);
     };
+
+
+    const loadAvailableTimes = async () => {
+        try {
+          // Referencia correcta al documento 'horariosHabituales' dentro de la colección 'horarios'
+          const docRef = doc(db, 'horarios', 'horariosHabituales');
+          const docSnap = await getDoc(docRef);
+      
+          if (docSnap.exists()) {
+            const horarios = docSnap.data();
+            console.log("Horarios obtenidos:", horarios);
+      
+            // Procesa los horarios aquí, por ejemplo:
+            // Extrae los horarios de cada día
+            const diasDeLaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const horariosDisponibles = {};
+      
+            // Generar los tramos horarios de 15 minutos para cada día
+            diasDeLaSemana.forEach(dia => {
+              if (horarios[dia]) {
+                const { mañana, tarde } = horarios[dia];
+                horariosDisponibles[dia] = {
+                  mañana: {
+                    inicio: mañana.inicio,
+                    fin: mañana.fin,
+                    tramos: generateTimeSlots(mañana.inicio, mañana.fin)
+                  },
+                  tarde: {
+                    inicio: tarde.inicio,
+                    fin: tarde.fin,
+                    tramos: generateTimeSlots(tarde.inicio, tarde.fin)
+                  },
+                };
+              }
+            });
+      
+            console.log("Horarios procesados:", horariosDisponibles);
+            // Aquí puedes actualizar el estado o hacer cualquier otra acción con los horarios
+            setHorariosDisponibles(horariosDisponibles); // Guarda los horarios en un estado si es necesario
+      
+          } else {
+            console.error('No se encontró el documento de horariosHabituales');
+          }
+        } catch (error) {
+          console.error('Error al cargar los horarios disponibles:', error);
+        }
+      };
+      
+     
+      
+      // Convierte una hora (hh:mm) a minutos desde medianoche
+      const convertToMinutes = (time) => {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+      
+      // Convierte minutos desde medianoche a formato hora (hh:mm)
+      const convertToTimeFormat = (minutes) => {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+      };
+
+
 
     const handleConfirmAppointment = async () => {
         if (selectedDate && selectedTime && selectedService) {
             try {
-                await reserveAppointment(selectedDate, selectedTime, selectedService);
+                await addDoc(collection(db, 'reservas'), {
+                    userId: userId,
+                    fecha: selectedDate,
+                    hora: selectedTime,
+                    servicio: selectedService,
+                });
                 console.log(`Cita confirmada para el ${selectedDate.toLocaleDateString()} a las ${selectedTime}`);
             } catch (error) {
                 console.error("Error al confirmar la cita:", error);
@@ -173,98 +198,11 @@ const ClientRequestAppointmentScreen = () => {
         }
     };
 
-    const generateAllTimes = () => {
-        const times = [];
-        for (let hour = 10; hour <= 20; hour++) {
-            if (hour === 14) continue; // Evita la hora 14:00
-            for (let minutes = 0; minutes < 60; minutes += 15) {
-                times.push(`${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
-            }
-        }
-        return times;
-    };
-
-    const reserveAppointment = async (date, time, service) => {
-        await addDoc(collection(db, 'reservas'), {
-            userId: userId,
-            fecha: date,
-            hora: time,
-            servicio: service,
-        });
-    };
-
     const getDaysInWeek = () => {
         const startOfWeek = new Date(currentWeek);
-        const dayOfWeek = startOfWeek.getDay();
-        const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Ajuste para que el lunes sea el primer día
-        startOfWeek.setDate(currentWeek.getDate() + diff);
-        const days = [];
-        for (let i = 0; i < 7; i++) {
-            const day = new Date(startOfWeek);
-            day.setDate(startOfWeek.getDate() + i);
-            days.push(day);
-        }
-        return days;
+        startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1);
+        return Array.from({ length: 7 }, (_, i) => new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i));
     };
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set the time to midnight for comparison
-
-
-    const handleDaySelection = (dayKey) => {
-        setSelectedDay(dayKey);
-        generateAvailableTimes(dayKey);
-    };
-
-
-
-    /**/
-    const insertarHorariosHabituales = async () => {
-        const horariosHabituales = {
-            Lunes: {
-                mañana: { inicio: "10:00", fin: "14:00" },
-                tarde: { inicio: "16:00", fin: "20:00" }
-            },
-            Martes: {
-                mañana: { inicio: "10:00", fin: "14:00" },
-                tarde: { inicio: "16:00", fin: "20:00" }
-            },
-            Miércoles: {
-                mañana: { inicio: "10:00", fin: "14:00" },
-                tarde: { inicio: "16:00", fin: "20:00" }
-            },
-            Jueves: {
-                mañana: { inicio: "10:00", fin: "14:00" },
-                tarde: { inicio: "16:00", fin: "20:00" }
-            },
-            Viernes: {
-                mañana: { inicio: "10:00", fin: "14:00" },
-                tarde: { inicio: "16:00", fin: "20:00" }
-            },
-            Sábado: {
-                mañana: { inicio: "10:00", fin: "14:00" },
-                tarde: { inicio: "16:00", fin: "20:00" }
-            },
-            Domingo: {
-                mañana: { inicio: "10:00", fin: "14:00" },
-                tarde: { inicio: "16:00", fin: "20:00" }
-            }
-        };
-    
-        try {
-            await setDoc(doc(collection(db, 'horarios'), 'horariosHabituales'), horariosHabituales);
-            console.log('Horarios habituales insertados correctamente!');
-        } catch (error) {
-            console.error('Error al insertar horariosHabituales: ', error);
-        }
-    };
-    
-    insertarHorariosHabituales();
-
-    const handleGoBack = () => {
-        navigation.navigate('HomeScreenClient');
-    };
-
 
     return (
         <SafeAreaView style={styles.container}>
@@ -285,22 +223,23 @@ const ClientRequestAppointmentScreen = () => {
                             horizontal
                             contentContainerStyle={styles.weekContainer}
                             showsHorizontalScrollIndicator={false}
-                            style={{ width: screenWidth }} 
+                            style={{ width: screenWidth }}
                         >
                             {getDaysInWeek().map((day, index) => {
-                                const isBeforeToday = day < today; // Verifica si el día es anterior a hoy
+                                const isBeforeToday = day < new Date();
                                 const isUnavailable = unavailableDates.includes(day.toISOString().split('T')[0]);
-                            
+
                                 return (
                                     <View key={index} style={styles.dayContainer}>
                                         <Text style={styles.weekNumberText}>{day.toLocaleDateString('es-ES', { weekday: 'short' })}</Text>
                                         <TouchableOpacity
-                                            onPress={() => !isBeforeToday && !isUnavailable && handleDayPress(day)} // Deshabilitar clic si es antes de hoy o no disponible
+                                            onPress={() => !isBeforeToday && !isUnavailable && handleDayPress(day)}
                                             style={[
-                                                getDayButtonStyle(day, selectedDate),
-                                                (isBeforeToday || isUnavailable) && styles.disabledDayButton // Aplica estilo deshabilitado
+                                                styles.dayButton,
+                                                (isBeforeToday || isUnavailable) && styles.disabledDayButton,
+                                                day.toISOString() === selectedDate?.toISOString() && styles.selectedDayButton,
                                             ]}
-                                            disabled={isBeforeToday || isUnavailable} // Deshabilitar botón si es necesario
+                                            disabled={isBeforeToday || isUnavailable}
                                         >
                                             <Text style={styles.dayText}>{day.getDate()}</Text>
                                         </TouchableOpacity>
@@ -313,251 +252,183 @@ const ClientRequestAppointmentScreen = () => {
                             <Text style={styles.navText}>▶</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
 
-                <Text style={styles.serviceLabel}>Selecciona un servicio:</Text>
-                <View style={styles.chipContainer}>
-                    {services.map((service) => {
-                        // Calculamos el espacio entre el servicio y el precio
-                        const serviceText = `${service.nombre} - (${service.duracion} Min.)`;
-                        const dots = '.'; // Un solo punto
-                        const maxLength = 30; // Longitud máxima total del chip (ajusta según sea necesario)
-                        const spaceLength = maxLength - serviceText.length - service.precio.length - 3; // 3 para los puntos suspensivos
+                    <View style={styles.selectorContainer}>
+                        <Text style={styles.sectionTitle}>Selecciona un servicio:</Text>
+                        <ScrollView horizontal contentContainerStyle={styles.serviceContainer} showsHorizontalScrollIndicator={false}>
+                            {services.map(service => (
+                                <Chip
+                                    key={service.id}
+                                    selected={selectedService === service.id}
+                                    onPress={() => setSelectedService(service.id)}
+                                    style={[styles.chip, selectedService === service.id && styles.chipSelected]}
+                                    textStyle={styles.chipText}
+                                >
+                                    {`${service.nombre} - (${service.duracion} Min.) ${service.precio}€`}
+                                </Chip>
+                            ))}
+                        </ScrollView>
 
-                        // Creamos la cadena de puntos
-                        const dotsToShow = spaceLength > 0 ? dots.repeat(spaceLength) : '';
+                        {selectedService ? (
+                            <>
+                                <Text style={styles.sectionTitle}>Selecciona un horario:</Text>
+                                <Picker
+                                    selectedValue={selectedTime}
+                                    onValueChange={(itemValue) => setSelectedTime(itemValue)}
+                                    style={styles.picker}
+                                >
+                                    <Picker.Item label="Seleccionar hora" value="" />
+                                    {availableTimes.map((time, index) => (
+                                        <Picker.Item key={index} label={time} value={time} />
+                                    ))}
+                                </Picker>
+                            </>
+                        ) : null}
 
-                        return (
-                            <Chip
-                                key={service.id}
-                                icon={selectedService === service.id ? "check" : "information"}
-                                onPress={() => setSelectedService(selectedService === service.id ? '' : service.id)}
-                                style={[
-                                    styles.chip,
-                                    selectedService === service.id && styles.selectedChip,
-                                ]}
-                            >
-                                <Text style={styles.chipText}>
-                                    {serviceText} {dotsToShow} {service.precio}€
-                                </Text>
-                            </Chip>
-                        );
-                    })}
-                </View>
-
-                <View>
-            <Text>Selecciona un día:</Text>
-            {Object.keys(horarios).map((dayKey) => (
-                <TouchableOpacity key={dayKey} onPress={() => handleDaySelection(dayKey)}>
-                    <Text>{dayKey}</Text>
-                </TouchableOpacity>
-            ))}
-            
-            {availableTimes.length > 0 && (
-                <View>
-                    <Text>Horarios Disponibles:</Text>
-                    {availableTimes.map((time, index) => (
-                        <TouchableOpacity key={index} style={styles.timeButton}>
-                            <Text style={styles.timeText}>{time}</Text>
+                        <TouchableOpacity onPress={handleConfirmAppointment} style={styles.confirmButton}>
+                            <Text style={styles.confirmButtonText}>Confirmar Cita</Text>
                         </TouchableOpacity>
-                    ))}
+                    </View>
+
+                    <TouchableOpacity onPress={() => navigation.navigate('HomeScreenClient')} style={styles.backButton}>
+                        <Icon name="arrow-left" size={24} color="#FFF" />
+                        <Text style={styles.backButtonText}>Volver</Text>
+                    </TouchableOpacity>
                 </View>
-            )}
-        </View>
-        <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={handleConfirmAppointment} style={styles.button}>
-                <Icon name="check" size={20} color="#000" />
-                <Text style={styles.buttonText}> Confirmar Cita</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleGoBack} style={styles.button}>
-                <Icon name="arrow-left" size={20} color="#000" />
-                <Text style={styles.buttonText}> Volver Atrás</Text>
-            </TouchableOpacity>
-        </View>
             </ImageBackground>
         </SafeAreaView>
-
     );
 };
 
 const styles = StyleSheet.create({
-    availableTimesLabel: {
-        color: 'white',
-        fontSize: 18, // Aumentar tamaño de la etiqueta de horarios
-        marginBottom: 10,
-        marginTop: 20,
-    },
-    background: {
-        flex: 1,
-        justifyContent: 'center',
-        padding: 20,
-    },
-    backButton: {
-        backgroundColor: 'gray', // Cambia el color si lo deseas
-        padding: 15,
-        alignItems: 'center',
-    },
-    backButtonText: {
-        color: 'white',
-        fontSize: 16,
-    },
-    button: {
-        backgroundColor: '#fff',         // Fondo blanco
-        paddingVertical: 10,             // Ajuste de padding vertical
-        paddingHorizontal: 20,           // Ajuste de padding horizontal
-        borderRadius: 8,                 // Bordes redondeados
-        marginTop: 20,                   // Margen superior
-        alignItems: 'center',            // Centra el contenido horizontalmente
-        justifyContent: 'center',        // Centra el contenido verticalmente
-        flexDirection: 'row',            // Alinea ícono y texto en fila
-      },
-      buttonContainer: {
-        flexDirection: 'row',            // Coloca los botones en una fila
-        justifyContent: 'space-between', // Espacio entre los botones
-        paddingHorizontal: 10,           // Ajusta el espacio lateral
-        marginTop: 20,
-      },
-      buttonText: {
-        color: '#000',                   // Color de texto negro
-        fontSize: 16,
-        textAlign: 'center',
-        marginLeft: 8,                   // Espacio entre el ícono y el texto
-      },
-    chip: {
-        backgroundColor: '#f0f0f0',
-        margin: 5,
-        width: '90%',
-    },
-    chipContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between', // Asegura que los chips estén justificados
-        padding: 10,
-    },
-    chipText: {
-        flexShrink: 1, 
-        textAlign: 'left',
-    },
-    confirmButton: {
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 5,
-        padding: 15,
-        borderRadius:55,
-        marginBottom:15,
-    },
-    confirmText: {
-        color: '#000',
-        fontWeight: 'bold',
-    },
     container: {
         flex: 1,
     },
-    dayButton: {
-        alignItems: 'center',
-        backgroundColor: 'white',
-        borderRadius: 5,
-        height: 30, // Altura del botón
-        padding: 5, 
-        width: 30, // Ancho del botón
+    background: {
+        flex: 1,
+        resizeMode: 'cover',
+        justifyContent: 'center',
     },
-    dayContainer: {
-        alignItems: 'center',
-        marginHorizontal: 4, // Reducir el margen entre los días
-    },
-    dayText: {
-        color: 'black',
-        fontSize: 16, // Ajustar tamaño del texto del día
-    },
-    disabledDayButton: {
-        backgroundColor: 'lightgray', // Color para los días deshabilitados
-        opacity: 0.6, // Reduce la opacidad para un efecto deshabilitado
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#FFF',
+        textAlign: 'center',
+        marginVertical: 10,
     },
     mainContainer: {
-        backgroundColor: 'rgba(0, 0, 0, 0.7)', // Fondo negro con 70% de opacidad
-        borderColor: 'white', // Color del borde
-        borderRadius: 10, // Bordes redondeados
-        borderWidth: 5, // Ancho del borde
-        marginBottom: 20,
-        padding: 10, // Espaciado interno
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        padding: 20,
+        borderRadius: 10,
+        marginHorizontal: 10,
     },
     monthIndicator: {
-        color: 'white',
         fontSize: 18,
-        marginBottom: 10,
+        fontWeight: 'bold',
+        color: '#333',
         textAlign: 'center',
+        marginBottom: 10,
+    },
+    navigationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     navButton: {
         padding: 10,
     },
     navText: {
-        color: 'white',
-        fontSize: 24, // Aumentar tamaño del texto de navegación
-    },
-    navigationContainer: {
-        alignItems: 'center',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginVertical: 10,
-    },
-    picker: {
-        backgroundColor: 'white',
-        height: 50,
-        width: '100%',
-    },
-    scrollView: {
-        flexDirection: 'row',
-        marginBottom: 20,
-    },
-    selectedChip: {
-        backgroundColor: '#f0f0f0', // Color negro cuando está seleccionado
-        borderColor: 'green', // Borde verde cuando está seleccionado
-        borderWidth: 3, // Ancho del borde
-        color: '#fff',
-        fontWeight: 'bold',
-    },
-    selectedDayButton: {
-        borderColor: 'green', // Borde verde para el día seleccionado
-        borderWidth: 2,
-    },
-    selectedTime: {
-        backgroundColor: 'green',
-    },
-    serviceLabel: {
-        color: 'white',
-        fontSize: 18, // Aumentar tamaño de la etiqueta de servicio
-        marginBottom: 10,
-        marginTop: 20,
-    },
-    timeButton: {
-        backgroundColor: 'white',
-        borderRadius: 5,
-        marginHorizontal: 5,
-        padding: 10,
-    },
-    timeText: {
-        color: 'black',
-    },
-    title: {
-        color: 'white',
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    todayButton: {
-        borderColor: 'blue', 
-        borderWidth: 2,
-    },
-    unavailable: {
-        backgroundColor: 'lightgray', 
+        fontSize: 18,
+        color: '#333',
     },
     weekContainer: {
         flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    dayContainer: {
+        alignItems: 'center',
+        marginHorizontal: 5,
     },
     weekNumberText: {
-        color: 'white',
-        fontSize: 14, 
+        fontSize: 14,
+        color: '#333',
+        textAlign: 'center',
+        marginBottom: 5,
+    },
+    dayButton: {
+        backgroundColor: '#FFF',
+        padding: 10,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#333',
+    },
+    dayText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    disabledDayButton: {
+        opacity: 0.3,
+    },
+    todayButton: {
+        borderColor: '#007bff',
+        borderWidth: 2,
+    },
+    selectedDayButton: {
+        backgroundColor: '#007bff',
+    },
+    selectorContainer: {
+        marginTop: 20,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 5,
+    },
+    picker: {
+        borderColor: '#333',
+        borderWidth: 1,
+        borderRadius: 5,
+        marginVertical: 10,
+        paddingHorizontal: 10,
+    },
+    serviceContainer: {
+        flexDirection: 'row',
+        marginVertical: 10,
+    },
+    chip: {
+        marginHorizontal: 5,
+        backgroundColor: '#FFF',
+        borderColor: '#333',
+        borderWidth: 1,
+    },
+    chipSelected: {
+        backgroundColor: '#007bff',
+    },
+    chipText: {
+        color: '#333',
+    },
+    confirmButton: {
+        backgroundColor: '#007bff',
+        padding: 15,
+        borderRadius: 5,
+        marginTop: 10,
+    },
+    confirmButtonText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    backButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    backButtonText: {
+        fontSize: 18,
+        color: '#FFF',
+        marginLeft: 10,
     },
 });
 
