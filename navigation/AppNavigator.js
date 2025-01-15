@@ -1,4 +1,3 @@
-// appNavigator.js
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -17,7 +16,10 @@ const Tab = createBottomTabNavigator();
 function ClientTabNavigator() {
   return (
     <Tab.Navigator>
-      <Tab.Screen name="HomeScreenClient" component={HomeScreenClient} />
+      <Tab.Screen 
+        name="HomeScreenClient" 
+        component={HomeScreenClient} 
+      />
     </Tab.Navigator>
   );
 }
