@@ -43,25 +43,17 @@ const ClientRequestAppointmentScreen = () => {
     const loadUnavailableDates = async () => {
         try {
             const dates = [];
-            // Obtener el documento con ID 'fechas' dentro de la colección 'fechas_no_disponibles'
-            const docRef = doc(db, 'fechas_no_disponibles', 'fechas'); // Acceder al documento 'fechas'
-            const docSnap = await getDoc(docRef); // Obtener el documento
-        
-            // Verificar si el documento existe
+            const docRef = doc(db, 'fechas_no_disponibles', 'fechas');
+            const docSnap = await getDoc(docRef);
+
             if (docSnap.exists()) {
-                const docData = docSnap.data(); // Obtener los datos del documento
-        
-                // Recorrer todos los campos de fecha (fecha_01, fecha_02, etc.)
+                const docData = docSnap.data();
                 Object.keys(docData).forEach(field => {
                     const fieldValue = docData[field];
-        
-                    // Verificar si el campo es un Timestamp y convertirlo a fecha
                     if (fieldValue && fieldValue instanceof Timestamp) {
-                        dates.push(fieldValue.toDate().toISOString().split('T')[0]); // Formato YYYY-MM-DD
+                        dates.push(fieldValue.toDate().toISOString().split('T')[0]); 
                     }
                 });
-                console.log(dates);
-                // Almacenar las fechas no disponibles
                 setUnavailableDates(dates);
             } else {
                 console.log("El documento 'fechas' no existe");
@@ -69,25 +61,6 @@ const ClientRequestAppointmentScreen = () => {
         } catch (error) {
             console.error("Error al cargar las fechas no disponibles:", error);
         }
-    };
-
-    const generateAvailableTimes = (dayKey) => {
-        if (!horarios[dayKey]) return;
-        const { mañana, tarde } = horarios[dayKey];
-        const available = [];
-        if (mañana) available.push(...generateTimeSlots(mañana.inicio, mañana.fin));
-        if (tarde) available.push(...generateTimeSlots(tarde.inicio, tarde.fin));
-        setAvailableTimes(available);
-    };
-
-    const generateTimeSlots = (startTime, endTime) => {
-        const slots = [];
-        const start = new Date(`1970-01-01T${startTime}:00`);
-        const end = new Date(`1970-01-01T${endTime}:00`);
-        for (let time = start; time <= end; time.setMinutes(time.getMinutes() + 15)) {
-            slots.push(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        }
-        return slots;
     };
 
     const loadServices = async () => {
@@ -111,19 +84,21 @@ const ClientRequestAppointmentScreen = () => {
 
     const handleDayPress = async (day) => {
         setSelectedDate(day);
-        const dayOfWeek = day.toLocaleDateString('es-ES', { weekday: 'long' });  // Obtiene el día de la semana (ej. "Lunes", "Martes", etc.)
+        const dayOfWeek = day.toLocaleDateString('es-ES', { weekday: 'long' });
         await loadAvailableTimes(dayOfWeek);
-    };
-
-    const isDayDisabled = (date) => {
-        const formattedDate = date.toISOString().split('T')[0]; // Convertir la fecha a formato YYYY-MM-DD
-        return unavailableDates.includes(formattedDate);
     };
 
     const getDaysInWeek = () => {
         const startOfWeek = new Date(currentWeek);
         startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1);
         return Array.from({ length: 7 }, (_, i) => new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i));
+    };
+
+    // Función para verificar si una fecha es no disponible o domingo
+    const isDateUnavailableOrSunday = (date) => {
+        const dateString = date.toISOString().split('T')[0];
+        const isSunday = date.getDay() === 0; // 0 es domingo
+        return unavailableDates.includes(dateString) || isSunday;
     };
 
     const handleConfirmAppointment = async () => {
@@ -166,26 +141,28 @@ const ClientRequestAppointmentScreen = () => {
                             style={{ width: screenWidth }}
                         >
                             {getDaysInWeek().map((day, index) => {
-                                const isBeforeToday = day < new Date();
-                                const isUnavailable = unavailableDates.includes(day.toISOString().split('T')[0]);
+    const isBeforeToday = day < new Date();
+    const isUnavailable = unavailableDates.includes(day.toISOString().split('T')[0]);
+    const isSunday = day.getDay() === 0; // Verifica si es domingo
 
-                                return (
-                                    <View key={index} style={styles.dayContainer}>
-                                        <Text style={styles.weekNumberText}>{day.toLocaleDateString('es-ES', { weekday: 'short' })}</Text>
-                                        <TouchableOpacity
-                                            onPress={() => !isBeforeToday && !isUnavailable && handleDayPress(day)}
-                                            style={[
-                                                styles.dayButton,
-                                                (isBeforeToday || isUnavailable) && styles.disabledDayButton,
-                                                day.toISOString() === selectedDate?.toISOString() && styles.selectedDayButton,
-                                            ]}
-                                            disabled={isBeforeToday || isUnavailable}
-                                        >
-                                            <Text style={styles.dayText}>{day.getDate()}</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                );
-                            })}
+                            return (
+                                <View key={index} style={styles.dayContainer}>
+                                    <Text style={styles.weekNumberText}>{day.toLocaleDateString('es-ES', { weekday: 'short' })}</Text>
+                                    <TouchableOpacity
+                                        onPress={() => !isBeforeToday && !isUnavailable && !isSunday && handleDayPress(day)} // Excluir domingos deshabilitados
+                                        style={[
+                                            styles.dayButton,
+                                            (isBeforeToday || isUnavailable || isSunday) && styles.disabledDayButton, // Añadir fondo rojo y deshabilitar domingos
+                                            day.toISOString() === selectedDate?.toISOString() && styles.selectedDayButton,
+                                            (isUnavailable || isSunday) && styles.unavailableDay // Fondo rojo si el día está marcado como no disponible o es domingo
+                                        ]}
+                                        disabled={isBeforeToday || isUnavailable || isSunday} // Deshabilitar domingos y fechas no disponibles
+                                    >
+                                        <Text style={styles.dayText}>{day.getDate()}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            );
+                        })}
                         </ScrollView>
 
                         <TouchableOpacity onPress={() => changeWeek('next')} style={styles.navButton}>
@@ -241,107 +218,26 @@ const ClientRequestAppointmentScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    backButton: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        marginTop: 20,
+    },
+    backButtonText: {
+        color: '#FFF',
+        fontSize: 18,
+        marginLeft: 10,
     },
     background: {
         flex: 1,
+        justifyContent: 'center',
         resizeMode: 'cover',
-        justifyContent: 'center',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#FFF',
-        textAlign: 'center',
-        marginVertical: 10,
-    },
-    mainContainer: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        padding: 20,
-        borderRadius: 10,
-        marginHorizontal: 10,
-    },
-    monthIndicator: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        textAlign: 'center',
-        marginBottom: 10,
-    },
-    navigationContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    navButton: {
-        padding: 10,
-    },
-    navText: {
-        fontSize: 18,
-        color: '#333',
-    },
-    weekContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-    },
-    dayContainer: {
-        alignItems: 'center',
-        marginHorizontal: 5,
-    },
-    weekNumberText: {
-        fontSize: 14,
-        color: '#333',
-        textAlign: 'center',
-        marginBottom: 5,
-    },
-    dayButton: {
-        backgroundColor: '#FFF',
-        padding: 10,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#333',
-    },
-    dayText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    disabledDayButton: {
-        opacity: 0.3,
-    },
-    todayButton: {
-        borderColor: '#007bff',
-        borderWidth: 2,
-    },
-    selectedDayButton: {
-        backgroundColor: '#007bff',
-    },
-    selectorContainer: {
-        marginTop: 20,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
-    },
-    picker: {
-        borderColor: '#333',
-        borderWidth: 1,
-        borderRadius: 5,
-        marginVertical: 10,
-        paddingHorizontal: 10,
-    },
-    serviceContainer: {
-        flexDirection: 'row',
-        marginVertical: 10,
     },
     chip: {
-        marginHorizontal: 5,
         backgroundColor: '#FFF',
         borderColor: '#333',
         borderWidth: 1,
+        marginHorizontal: 5,
     },
     chipSelected: {
         backgroundColor: '#007bff',
@@ -351,24 +247,108 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         backgroundColor: '#007bff',
-        padding: 15,
         borderRadius: 5,
         marginTop: 10,
+        padding: 15,
     },
     confirmButtonText: {
         color: '#FFF',
         fontWeight: 'bold',
         textAlign: 'center',
     },
-    backButton: {
-        flexDirection: 'row',
+    container: {
+        flex: 1,
+    },
+    dayButton: {
+        backgroundColor: '#FFF',
+        borderColor: '#333',
+        borderRadius: 5,
+        borderWidth: 1,
+        padding: 10,
+    },
+    dayContainer: {
         alignItems: 'center',
+        marginHorizontal: 5,
+    },
+    dayText: {
+        color: '#333',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    disabledDayButton: {
+        opacity: 0.3,
+    },
+    mainContainer: {
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderRadius: 10,
+        marginHorizontal: 10,
+        padding: 20,
+    },
+    monthIndicator: {
+        color: '#333',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    navigationContainer: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    navButton: {
+        padding: 10,
+    },
+    navText: {
+        color: '#333',
+        fontSize: 18,
+    },
+    picker: {
+        borderColor: '#333',
+        borderRadius: 5,
+        borderWidth: 1,
+        marginVertical: 10,
+        paddingHorizontal: 10,
+    },
+    sectionTitle: {
+        color: '#333',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    selectedDayButton: {
+        backgroundColor: '#007bff',
+    },
+    serviceContainer: {
+        flexDirection: 'row',
+        marginVertical: 10,
+    },
+    selectorContainer: {
         marginTop: 20,
     },
-    backButtonText: {
-        fontSize: 18,
+    todayButton: {
+        borderColor: '#007bff',
+        borderWidth: 2,
+    },
+    unavailableDay: {
+        backgroundColor: 'red', // Fondo rojo para días no disponibles o domingos
+    },
+    weekContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    weekNumberText: {
+        color: '#333',
+        fontSize: 14,
+        marginBottom: 5,
+        textAlign: 'center',
+    },
+    title: {
         color: '#FFF',
-        marginLeft: 10,
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginVertical: 10,
+        textAlign: 'center',
     },
 });
 
