@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ImageBackground, SafeAreaView, Dimensions } from 'react-native';
-import { getFirestore, collection, getDocs, addDoc,doc, getDoc  } from 'firebase/firestore';
+import { getFirestore,Timestamp , collection, getDocs, addDoc,doc, getDoc  } from 'firebase/firestore';
 import { useUser } from '../services/UserContext';
 import { Picker } from '@react-native-picker/picker';
 import { Chip } from 'react-native-paper';
@@ -57,11 +57,11 @@ const ClientRequestAppointmentScreen = () => {
                     const fieldValue = docData[field];
         
                     // Verificar si el campo es un Timestamp y convertirlo a fecha
-                    if (fieldValue && fieldValue.toDate) {
+                    if (fieldValue && fieldValue instanceof Timestamp) {
                         dates.push(fieldValue.toDate().toISOString().split('T')[0]); // Formato YYYY-MM-DD
                     }
                 });
-        
+                console.log(dates);
                 // Almacenar las fechas no disponibles
                 setUnavailableDates(dates);
             } else {
