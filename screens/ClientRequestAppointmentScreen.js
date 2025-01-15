@@ -130,10 +130,7 @@ const ClientRequestAppointmentScreen = () => {
                     </Text>
 
                     <View style={styles.navigationContainer}>
-                        <TouchableOpacity onPress={() => changeWeek('previous')} style={styles.navButton}>
-                            <Text style={styles.navText}>◀</Text>
-                        </TouchableOpacity>
-
+                       
                         <ScrollView
                             horizontal
                             contentContainerStyle={styles.weekContainer}
@@ -141,9 +138,9 @@ const ClientRequestAppointmentScreen = () => {
                             style={{ width: screenWidth }}
                         >
                             {getDaysInWeek().map((day, index) => {
-    const isBeforeToday = day < new Date();
-    const isUnavailable = unavailableDates.includes(day.toISOString().split('T')[0]);
-    const isSunday = day.getDay() === 0; // Verifica si es domingo
+                    const isBeforeToday = day < new Date();
+                    const isUnavailable = unavailableDates.includes(day.toISOString().split('T')[0]);
+                    const isSunday = day.getDay() === 0; // Verifica si es domingo
 
                             return (
                                 <View key={index} style={styles.dayContainer}>
@@ -164,6 +161,14 @@ const ClientRequestAppointmentScreen = () => {
                             );
                         })}
                         </ScrollView>
+
+                       
+                    </View>
+                      {/* Contenedor de los botones de navegación */}
+                      <View style={styles.navigationRow}>
+                        <TouchableOpacity onPress={() => changeWeek('previous')} style={styles.navButton}>
+                            <Text style={styles.navText}>◀</Text>
+                        </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => changeWeek('next')} style={styles.navButton}>
                             <Text style={styles.navText}>▶</Text>
@@ -264,7 +269,10 @@ const styles = StyleSheet.create({
         borderColor: '#333',
         borderRadius: 5,
         borderWidth: 1,
-        padding: 10,
+        paddingVertical: 10,
+        width: 40,  // Asegura que todos los botones tengan el mismo ancho
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     dayContainer: {
         alignItems: 'center',
@@ -295,6 +303,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexDirection: 'row',
         justifyContent: 'space-between',
+    },
+    navigationRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginVertical: 10,
     },
     navButton: {
         padding: 10,
