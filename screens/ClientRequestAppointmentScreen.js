@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ImageBackground, SafeAreaView, Dimensions } from 'react-native';
-import { getFirestore,Timestamp , collection, getDocs, addDoc,doc, getDoc  } from 'firebase/firestore';
+import { getFirestore, Timestamp, collection, getDocs, addDoc, doc, getDoc } from 'firebase/firestore';
 import { useUser } from '../services/UserContext';
 import { Picker } from '@react-native-picker/picker';
 import { Chip } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../services/Firebase';
-
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -116,69 +115,16 @@ const ClientRequestAppointmentScreen = () => {
         await loadAvailableTimes(dayOfWeek);
     };
 
+    const isDayDisabled = (date) => {
+        const formattedDate = date.toISOString().split('T')[0]; // Convertir la fecha a formato YYYY-MM-DD
+        return unavailableDates.includes(formattedDate);
+    };
 
-    const loadAvailableTimes = async () => {
-        try {
-          // Referencia correcta al documento 'horariosHabituales' dentro de la colección 'horarios'
-          const docRef = doc(db, 'horarios', 'horariosHabituales');
-          const docSnap = await getDoc(docRef);
-      
-          if (docSnap.exists()) {
-            const horarios = docSnap.data();
-            console.log("Horarios obtenidos:", horarios);
-      
-            // Procesa los horarios aquí, por ejemplo:
-            // Extrae los horarios de cada día
-            const diasDeLaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-            const horariosDisponibles = {};
-      
-            // Generar los tramos horarios de 15 minutos para cada día
-            diasDeLaSemana.forEach(dia => {
-              if (horarios[dia]) {
-                const { mañana, tarde } = horarios[dia];
-                horariosDisponibles[dia] = {
-                  mañana: {
-                    inicio: mañana.inicio,
-                    fin: mañana.fin,
-                    tramos: generateTimeSlots(mañana.inicio, mañana.fin)
-                  },
-                  tarde: {
-                    inicio: tarde.inicio,
-                    fin: tarde.fin,
-                    tramos: generateTimeSlots(tarde.inicio, tarde.fin)
-                  },
-                };
-              }
-            });
-      
-            console.log("Horarios procesados:", horariosDisponibles);
-            // Aquí puedes actualizar el estado o hacer cualquier otra acción con los horarios
-            setHorariosDisponibles(horariosDisponibles); // Guarda los horarios en un estado si es necesario
-      
-          } else {
-            console.error('No se encontró el documento de horariosHabituales');
-          }
-        } catch (error) {
-          console.error('Error al cargar los horarios disponibles:', error);
-        }
-      };
-      
-     
-      
-      // Convierte una hora (hh:mm) a minutos desde medianoche
-      const convertToMinutes = (time) => {
-        const [hours, minutes] = time.split(':').map(Number);
-        return hours * 60 + minutes;
-      };
-      
-      // Convierte minutos desde medianoche a formato hora (hh:mm)
-      const convertToTimeFormat = (minutes) => {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-      };
-
-
+    const getDaysInWeek = () => {
+        const startOfWeek = new Date(currentWeek);
+        startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1);
+        return Array.from({ length: 7 }, (_, i) => new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i));
+    };
 
     const handleConfirmAppointment = async () => {
         if (selectedDate && selectedTime && selectedService) {
@@ -196,12 +142,6 @@ const ClientRequestAppointmentScreen = () => {
         } else {
             alert("Por favor, selecciona una fecha, un servicio y una hora.");
         }
-    };
-
-    const getDaysInWeek = () => {
-        const startOfWeek = new Date(currentWeek);
-        startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1);
-        return Array.from({ length: 7 }, (_, i) => new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i));
     };
 
     return (
