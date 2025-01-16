@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
         borderColor: '#333',
         borderRadius: 5,
-        borderWidth: 1,
+        borderWidth: 2,
         paddingVertical: 10,
         width: 40,  // Asegura que todos los botones tengan el mismo ancho
         justifyContent: 'center',
