@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Platform, Alert, Image, ImageBackground } from 'react-native';
+import { View, StyleSheet, Platform, Alert, Image, ImageBackground, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, getDoc, doc } from 'firebase/firestore';
@@ -11,6 +11,7 @@ const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const { setUserId } = useUser();
 
     const auth = getAuth();
@@ -40,20 +41,6 @@ const LoginScreen = ({ navigation }) => {
         }
     };
 
-    const handlePasswordReset = async () => {
-        if (!email) {
-            Alert.alert('Error', 'Por favor, introduce tu correo electrónico para restablecer la contraseña.');
-            return;
-        }
-
-        try {
-            await auth.sendPasswordResetEmail(email);
-            alert('Se ha enviado un correo electrónico para restablecer la contraseña.');
-        } catch (error) {
-            setError(error.message);
-        }
-    };
-
     return (
         <ImageBackground 
             source={require('../assets/fondo_generico.png')} 
@@ -61,26 +48,43 @@ const LoginScreen = ({ navigation }) => {
         >
             <View style={styles.overlay} />
             <View style={styles.container}>
-                
                 <Image source={require('../assets/logo_sin_fondo_blanco.png')} style={styles.logo} />
 
-                <TextInput
-                    label="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                    style={styles.input}
-                    mode="outlined"
-                />
-                <TextInput
-                    label="Password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    style={styles.input}
-                    mode="outlined"
-                />
+                {/* Input Email */}
+                <View style={styles.inputContainer}>
+                    <Icon name="user" size={20} color="white" style={styles.icon} />
+                    <TextInput
+                        label="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        style={styles.input}
+                        mode="outlined"
+                    />
+                </View>
+
+                {/* Input Password */}
+                <View style={styles.inputContainer}>
+                    <Icon name="lock" size={20} color="white" style={styles.icon} />
+                    <TextInput
+                        label="Password"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        style={styles.input}
+                        mode="outlined"
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                        <Icon 
+                            name={showPassword ? 'eye' : 'eye-slash'} 
+                            size={20} 
+                            color="black" 
+                        />
+                    </TouchableOpacity>
+                </View>
+                
                 {error ? <Text style={styles.error}>{error}</Text> : null}
 
+                {/* Buttons */}
                 <Button 
                     mode="contained" 
                     onPress={handleLogin} 
@@ -98,38 +102,9 @@ const LoginScreen = ({ navigation }) => {
                     Crear cuenta
                 </Button>
 
-                <Text style={styles.resetPassword} onPress={handlePasswordReset}>
+                <Text style={styles.resetPassword} onPress={() => { /* handle password reset */ }}>
                     ¿Has perdido la contraseña?
                 </Text>
-
-                <View style={styles.separatorContainer}>
-                    <View style={styles.line} />
-                    <Text style={styles.separatorText}>ó</Text>
-                    <View style={styles.line} />
-                </View>
-
-                <View style={styles.socialContainer}>
-                    <Button 
-                        mode="contained" 
-                        style={styles.socialButton} 
-                        labelStyle={styles.buttonLabel}
-                        icon={() => <Icon name="facebook" size={20} color={colors.white} />}
-                    />
-                    <Button 
-                        mode="contained" 
-                        style={styles.socialButton} 
-                        labelStyle={styles.buttonLabel}
-                        icon={() => <Icon name="google" size={20} color={colors.white} />}
-                    />
-                    {Platform.OS === 'ios' && (
-                        <Button 
-                            mode="contained" 
-                            style={styles.socialButton} 
-                            labelStyle={styles.buttonLabel}
-                            icon={() => <Icon name="apple" size={20} color={colors.white} />}
-                        />
-                    )}
-                </View>
             </View>
         </ImageBackground>
     );
@@ -146,7 +121,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Capa negra semitransparente
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     container: {
         flex: 1,
@@ -160,8 +135,22 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         marginBottom: 24,
     },
-    input: {
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: 16,
+    },
+    input: {
+        flex: 1,
+        marginLeft: 10,
+    },
+    icon: {
+        marginRight: 10,
+    },
+    eyeIcon: {
+        position: 'absolute',
+        right: 10,
+        top: 15,
     },
     button: {
         marginTop: 16,
@@ -179,31 +168,6 @@ const styles = StyleSheet.create({
         marginTop: 16,
         textAlign: 'center',
         textDecorationLine: 'underline',
-    },
-    separatorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 16,
-    },
-    line: {
-        flex: 1,
-        height: 2,
-        backgroundColor: colors.white,
-        marginHorizontal: 8,
-    },
-    separatorText: {
-        textAlign: 'center',
-        color: colors.white,
-    },
-    socialContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 8,
-    },
-    socialButton: {
-        flex: 1,
-        marginHorizontal: 4,
-        backgroundColor: colors.primary,
     },
 });
 
