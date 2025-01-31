@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ImageBackground, Dimensions, SafeAreaView, ScrollView, Image } from 'react-native';
 import { db } from '../services/Firebase'; // Asegúrate de que esta ruta sea correcta
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore'; // Firebase Firestore import
+import { collection, getDocs, doc } from 'firebase/firestore'; // Firebase Firestore import
 import avatar from '../assets/avatar.png'; // Importa la imagen de avatar
 
 const ClientRequestAppointmentScreen = () => {
     const [barbers, setBarbers] = useState([]);
     const [selectedBarber, setSelectedBarber] = useState(null);
     const [selectedBarberId, setSelectedBarberId] = useState(null);  // Nuevo estado para guardar el ID del peluquero
-    const [specialties, setSpecialties] = useState([]);  // Nuevo estado para almacenar las especialidades
-    const [selectedSpecialty, setSelectedSpecialty] = useState(null); // Estado para la especialidad seleccionada
+    const [selectedDate, setSelectedDate] = useState(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedServices, setSelectedServices] = useState([]);
+    const [services, setServices] = useState([]); // Estado para guardar los servicios del peluquero
 
     useEffect(() => {
         // Obtener los peluqueros de Firestore
@@ -28,7 +30,7 @@ const ClientRequestAppointmentScreen = () => {
 
                 // Añadir la opción 'Cualquiera' al principio de la lista
                 const allBarbers = [
-                    { nombre: 'Cualquiera', imagen: avatar, rol: '', id: null }, // 'Cualquiera' no tiene ID
+                    { nombre: 'Cualquiera', imagen: avatar, rol: '', id: null },
                     ...barberList
                 ];
 
@@ -41,38 +43,98 @@ const ClientRequestAppointmentScreen = () => {
         fetchBarbers();
     }, []);  // Solo se ejecuta una vez al montar el componente
 
+    // Función para cargar los servicios del peluquero seleccionado
+    // Función para cargar los servicios del peluquero seleccionado
+const fetchServices = async (barberId) => {
+    if (!barberId) {
+        console.log("No hay ID de peluquero válido para cargar servicios.");
+        return;
+    }
+
+    try {
+        // Obtenemos los datos del peluquero
+        const barberDocRef = doc(db, 'peluqueros', barberId);
+        const barberDocSnapshot = await getDoc(barberDocRef);
+
+        if (!barberDocSnapshot.exists()) {
+            console.log("No se encontró el peluquero.");
+            return;
+        }
+
+        const barberData = barberDocSnapshot.data();
+        const servicesArray = barberData.servicios || []; // Array de IDs de servicios
+
+        // Si no hay servicios asignados al peluquero
+        if (servicesArray.length === 0) {
+            console.log("El peluquero no tiene servicios asignados.");
+            return;
+        }
+
+        console.log("Servicios ID del peluquero:", servicesArray);
+
+        // Ahora obtenemos los detalles de cada servicio usando los IDs
+        const servicesPromises = servicesArray.map(serviceId => {
+            const serviceRef = doc(db, 'servicios', serviceId);
+            return getDoc(serviceRef);
+        });
+
+        const serviceSnapshots = await Promise.all(servicesPromises);
+
+        // Mapeamos los servicios a su formato adecuado
+        const servicesList = serviceSnapshots.map(snapshot => {
+            if (snapshot.exists()) {
+                return {
+                    id: snapshot.id,
+                    ...snapshot.data(),
+                };
+            }
+            return null; // Si el servicio no existe, se ignora
+        }).filter(service => service !== null); // Filtramos los servicios que no existan
+
+        // Mostrar los servicios cargados
+        console.log("Servicios disponibles para el peluquero:", servicesList);
+
+        // Establecer el estado con los servicios obtenidos
+        setServices(servicesList);
+    } catch (error) {
+        console.error("Error al obtener los servicios: ", error);
+    }
+};
+
     const handleBarberSelect = (barber) => {
         if (selectedBarber?.id === barber.id) {
             // Si el peluquero ya está seleccionado, desmarcarlo
             setSelectedBarber(null);
             setSelectedBarberId(null);
-            setSpecialties([]);  // Limpiar las especialidades cuando se deselecciona el peluquero
+            setSelectedServices([]); // Limpiar servicios seleccionados al desmarcar
+            setServices([]); // Limpiar servicios al desmarcar
         } else {
             // Seleccionar el nuevo peluquero
             setSelectedBarber(barber);
             setSelectedBarberId(barber.id);
-            setSpecialties(barber.especialidades || []); // Establecer las especialidades del peluquero
+            setSelectedServices([]); // Limpiar servicios seleccionados al cambiar de peluquero
+            if (barber.id) {
+                fetchServices(barber.id); // Cargar servicios del peluquero seleccionado
+            }
         }
-        
-        // Si selecciona 'Cualquiera', no guardamos ID y limpiamos las especialidades
+
+        // Si selecciona 'Cualquiera', no guardamos ID
         if (barber.nombre === 'Cualquiera') {
             setSelectedBarberId(null);  // Restablece el ID si se selecciona 'Cualquiera'
-            setSpecialties([]); // Limpiar las especialidades
+            setServices([]); // Limpiar servicios al seleccionar 'Cualquiera'
         } else {
             setSelectedBarberId(barber.id);  // Guarda el ID del peluquero seleccionado
         }
-
-        // Lógica adicional si selecciona 'Cualquiera' o un peluquero específico
-        if (barber.nombre === 'Cualquiera') {
-            console.log('Se ha seleccionado cualquier peluquero');
-        } else {
-            console.log(`Se ha seleccionado el peluquero: ${barber.id}`);
-        }
     };
 
-    const handleSpecialtySelect = (specialty) => {
-        setSelectedSpecialty(specialty);  // Establecer la especialidad seleccionada
-        console.log(`Servicio seleccionado: ${specialty}`);
+    const handleServiceSelect = (service) => {
+        setSelectedServices((prevServices) => {
+            if (prevServices.includes(service.id)) {
+                return prevServices.filter((s) => s !== service.id); // Eliminar servicio si ya está seleccionado
+            } else {
+                return [...prevServices, service.id]; // Agregar servicio a la lista
+            }
+        });
     };
 
     return (
@@ -82,9 +144,9 @@ const ClientRequestAppointmentScreen = () => {
                 <View style={styles.mainContainer}>
                     {/* Scroll Horizontal para los peluqueros */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
-                    {barbers.map((peluquero, index) => {
+                        {barbers.map((peluquero, index) => {
                             const isSelected = selectedBarber?.id === peluquero.id;
-                            
+
                             return (
                                 <View key={index} style={styles.cardContainer}>
                                     <TouchableOpacity 
@@ -103,29 +165,32 @@ const ClientRequestAppointmentScreen = () => {
                                         </View>
                                         <View style={styles.infoContainer}>
                                             <Text style={styles.name}>{peluquero.nombre}</Text>
+                                            <Text style={styles.role}>{peluquero.rol}</Text>
                                         </View>
                                     </TouchableOpacity>
                                 </View>
                             );
                         })}
                     </ScrollView>
-                    {selectedBarber && selectedBarberId && (
-                        <View style={styles.specialtyContainer}>
-                            <Text style={styles.specialtyTitle}>Selecciona un Servicio</Text>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                {specialties.map((specialty, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        style={[
-                                            styles.specialtyCard,
-                                            selectedSpecialty === specialty ? styles.selectedSpecialty : null
-                                        ]}
-                                        onPress={() => handleSpecialtySelect(specialty)}
-                                    >
-                                        <Text style={styles.specialtyText}>{specialty}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
+
+                    {/* Contenedor de servicios */}
+                    {selectedBarber && services.length > 0 && (
+                        <View style={styles.serviceContainer}>
+                            <Text style={styles.specialtyTitle}>Servicios disponibles:</Text>
+                            {services.map((service, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.serviceButton,
+                                        selectedServices.includes(service.id) ? styles.selectedService : null
+                                    ]}
+                                    onPress={() => handleServiceSelect(service)}
+                                >
+                                    <Text style={styles.serviceText}>
+                                        {service.nombre} - {service.duracion}min - ${service.precio}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
                     )}
                 </View>
@@ -211,32 +276,26 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#888',
     },
-    specialtyContainer: {
-        marginTop: 20,
-        width: '90%',
-        alignItems: 'center',
-        position: 'absolute',
-    },
     specialtyTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#fff',
         marginBottom: 10,
     },
-    specialtyCard: {
+    serviceButton: {
         backgroundColor: '#fff',
-        borderRadius: 8,
         padding: 10,
-        marginRight: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
+        marginVertical: 5,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#ddd',
     },
-    selectedSpecialty: {
-        backgroundColor: '#4CAF50', // Color verde cuando está seleccionado
+    selectedService: {
+        backgroundColor: '#4CAF50',
+        borderColor: '#388E3C',
     },
-    specialtyText: {
-        fontSize: 16,
-        color: '#000',
+    serviceText: {
+        fontSize: 14,
+        color: '#333',
     },
 });
 
