@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ImageBackground, Dimensions, SafeAreaView, ScrollView, Image } from 'react-native';
 import { db } from '../services/Firebase'; // Asegúrate de que esta ruta sea correcta
-import { collection, getDocs } from 'firebase/firestore'; // Firebase Firestore import
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore'; // Firebase Firestore import
 import avatar from '../assets/avatar.png'; // Importa la imagen de avatar
 
 const ClientRequestAppointmentScreen = () => {
     const [barbers, setBarbers] = useState([]);
     const [selectedBarber, setSelectedBarber] = useState(null);
     const [selectedBarberId, setSelectedBarberId] = useState(null);  // Nuevo estado para guardar el ID del peluquero
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [specialties, setSpecialties] = useState([]);  // Nuevo estado para almacenar las especialidades
+    const [selectedSpecialty, setSelectedSpecialty] = useState(null); // Estado para la especialidad seleccionada
 
     useEffect(() => {
         // Obtener los peluqueros de Firestore
@@ -46,15 +46,18 @@ const ClientRequestAppointmentScreen = () => {
             // Si el peluquero ya está seleccionado, desmarcarlo
             setSelectedBarber(null);
             setSelectedBarberId(null);
+            setSpecialties([]);  // Limpiar las especialidades cuando se deselecciona el peluquero
         } else {
             // Seleccionar el nuevo peluquero
             setSelectedBarber(barber);
             setSelectedBarberId(barber.id);
+            setSpecialties(barber.especialidades || []); // Establecer las especialidades del peluquero
         }
         
-        // Si selecciona 'Cualquiera', no guardamos ID
+        // Si selecciona 'Cualquiera', no guardamos ID y limpiamos las especialidades
         if (barber.nombre === 'Cualquiera') {
             setSelectedBarberId(null);  // Restablece el ID si se selecciona 'Cualquiera'
+            setSpecialties([]); // Limpiar las especialidades
         } else {
             setSelectedBarberId(barber.id);  // Guarda el ID del peluquero seleccionado
         }
@@ -65,6 +68,11 @@ const ClientRequestAppointmentScreen = () => {
         } else {
             console.log(`Se ha seleccionado el peluquero: ${barber.id}`);
         }
+    };
+
+    const handleSpecialtySelect = (specialty) => {
+        setSelectedSpecialty(specialty);  // Establecer la especialidad seleccionada
+        console.log(`Servicio seleccionado: ${specialty}`);
     };
 
     return (
@@ -95,13 +103,31 @@ const ClientRequestAppointmentScreen = () => {
                                         </View>
                                         <View style={styles.infoContainer}>
                                             <Text style={styles.name}>{peluquero.nombre}</Text>
-                                            <Text style={styles.role}>{peluquero.rol}</Text>
                                         </View>
                                     </TouchableOpacity>
                                 </View>
                             );
                         })}
                     </ScrollView>
+                    {selectedBarber && selectedBarberId && (
+                        <View style={styles.specialtyContainer}>
+                            <Text style={styles.specialtyTitle}>Selecciona un Servicio</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                {specialties.map((specialty, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={[
+                                            styles.specialtyCard,
+                                            selectedSpecialty === specialty ? styles.selectedSpecialty : null
+                                        ]}
+                                        onPress={() => handleSpecialtySelect(specialty)}
+                                    >
+                                        <Text style={styles.specialtyText}>{specialty}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
                 </View>
             </ImageBackground>
         </SafeAreaView>
@@ -184,6 +210,33 @@ const styles = StyleSheet.create({
     role: {
         fontSize: 12,
         color: '#888',
+    },
+    specialtyContainer: {
+        marginTop: 20,
+        width: '90%',
+        alignItems: 'center',
+        position: 'absolute',
+    },
+    specialtyTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 10,
+    },
+    specialtyCard: {
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        padding: 10,
+        marginRight: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    selectedSpecialty: {
+        backgroundColor: '#4CAF50', // Color verde cuando está seleccionado
+    },
+    specialtyText: {
+        fontSize: 16,
+        color: '#000',
     },
 });
 
