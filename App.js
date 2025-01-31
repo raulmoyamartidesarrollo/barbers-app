@@ -6,15 +6,14 @@ import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth'; 
 import { UserProvider } from './services/UserContext'; 
 import * as Notifications from 'expo-notifications';
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
+import { useFonts } from 'expo-font';
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [permissionsGranted, setPermissionsGranted] = useState(false); 
   const [permissionsRequested, setPermissionsRequested] = useState(false);
-
-  const projectId = '3404a1af-ea31-43c1-bfbf-53ccbcabde55';
 
   const registerForPushNotificationsAsync = async () => {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -25,7 +24,7 @@ const App = () => {
         "Notificaciones Desactivadas",
         "Has desactivado las notificaciones. Para recibir notificaciones, habilítalas en la configuración del sistema."
       );
-      setPermissionsRequested(true); // Se asegura de que no vuelva a pedir los permisos
+      setPermissionsRequested(true); // No solicitar permisos nuevamente
       return;
     }
   
@@ -35,17 +34,17 @@ const App = () => {
     }
   
     if (finalStatus === 'granted') {
-      const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
       console.log('Expo Push Token:', token);
       setPermissionsGranted(true);
-    } else if (finalStatus === 'denied') {
+    } else {
       Alert.alert(
         "Notificaciones Desactivadas",
         "Has desactivado las notificaciones. Puedes habilitarlas en la configuración del sistema."
       );
     }
   
-    setPermissionsRequested(true); // Se asegura de que no vuelva a pedir los permisos en futuras sesiones
+    setPermissionsRequested(true); // No solicitar permisos nuevamente
   };
 
   useEffect(() => {
@@ -53,13 +52,13 @@ const App = () => {
       setUser(user);
       setLoading(false);
 
-      // Solo registra las notificaciones si el usuario está logueado y los permisos no han sido solicitados previamente
+      // Solo registra las notificaciones si el usuario está logueado
       if (user && !permissionsRequested) {
         registerForPushNotificationsAsync();
       }
     });
 
-    return () => unsubscribe(); // Limpia el listener
+    return () => unsubscribe(); // Limpiar el listener de Firebase
   }, [permissionsRequested]);
 
   if (loading) {
@@ -70,7 +69,7 @@ const App = () => {
     <UserProvider value={{ user }}>
       <PaperProvider>
         <NavigationContainer>
-          <AppNavigator/> 
+          <AppNavigator />
         </NavigationContainer>
       </PaperProvider>
     </UserProvider>
