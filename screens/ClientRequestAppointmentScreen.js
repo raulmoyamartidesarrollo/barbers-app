@@ -3,12 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, FlatList, Sa
 import { db } from '../services/Firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import avatar from '../assets/avatar.png';
+import { Drawer } from 'react-native-paper'; // Importa Drawer de react-native-paper
 
 const ClientRequestAppointmentScreen = () => {
     const [barbers, setBarbers] = useState([]);
     const [selectedBarber, setSelectedBarber] = useState(null);
     const [selectedBarberId, setSelectedBarberId] = useState(null);
-    const [selectedServices, setSelectedServices] = useState([]);
+    const [selectedService, setSelectedService] = useState(null);
     const [services, setServices] = useState([]);
 
     useEffect(() => {
@@ -55,13 +56,13 @@ const ClientRequestAppointmentScreen = () => {
         if (selectedBarber?.id === barber.id) {
             setSelectedBarber(null);
             setSelectedBarberId(null);
-            setSelectedServices([]);
+            setSelectedService(null);
             setServices([]);
         } else {
             setSelectedBarber(barber);
             setSelectedBarberId(barber.id);
-            setSelectedServices([]);
-    
+            setSelectedService(null);
+
             if (barber.id) {
                 fetchServices(barber.id);
             } else {
@@ -80,21 +81,10 @@ const ClientRequestAppointmentScreen = () => {
         }
     };
 
-    const handleServiceSelect = (service) => {
-        setSelectedServices(prev =>
-            prev.includes(service.id) ? prev.filter(s => s !== service.id) : [...prev, service.id]
-        );
+    const handleServiceSelect = (value) => {
+        console.log("Servicio seleccionado:", value);
+        setSelectedService(value);
     };
-
-    const renderServiceItem = ({ item }) => (
-        <TouchableOpacity
-            style={[styles.serviceCard, selectedServices.includes(item.id) && styles.selectedService]}
-            onPress={() => handleServiceSelect(item)}
-        >
-            <Text style={styles.serviceName}>{item.nombre}</Text>
-            <Text style={styles.serviceDetails}>{item.duracion} min - {item.precio} €</Text>
-        </TouchableOpacity>
-    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -121,14 +111,22 @@ const ClientRequestAppointmentScreen = () => {
     
                     {/* Contenedor de servicios */}
                     {selectedBarber && services.length > 0 && (
-                        <FlatList
-                            data={services}
-                            renderItem={renderServiceItem}
-                            keyExtractor={item => item.id}
-                            style={styles.serviceList}
-                            numColumns={2}  // Usamos 2 columnas para que los elementos sean más compactos
-                            showsVerticalScrollIndicator={false}
-                        />
+                        <View style={styles.serviceList}>
+                            <Text style={styles.serviceLabel}>Selecciona servicio</Text>
+                            <Drawer.Section>
+                                {services.map(service => (
+                                    <Drawer.Item
+                                        key={service.id}
+                                        label={`${service.nombre} - ${service.duracion} min - ${service.precio} €`}
+                                        onPress={() => handleServiceSelect(service.id)}
+                                        style={[
+                                            styles.drawerItem, 
+                                            selectedService === service.id && styles.selectedDrawerItem
+                                        ]}
+                                    />
+                                ))}
+                            </Drawer.Section>
+                        </View>
                     )}
                 </View>
             </ImageBackground>
@@ -141,26 +139,16 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
     background: { alignItems: 'center', height, justifyContent: 'flex-start', width },
     card: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, height: 150, justifyContent: 'center', padding: 5, width: 120 },
-    container: { flex: 1, justifyContent: 'flex-start' }, 
+    container: { flex: 1, justifyContent: 'flex-start' },
     image: { borderRadius: 40, height: 80, resizeMode: 'cover', width: 80 },
     name: { color: '#000', fontSize: 14, fontWeight: 'bold' },
     selectedCard: { borderColor: 'green', borderWidth: 5 },
     selectionContainer: { alignItems: 'center', width: '100%' },
     serviceList: { marginTop: 20, width: '80%' },
-    serviceLabel: { fontSize: 18, color: '#fff', marginBottom: 10 },
-    serviceCard: { 
-        backgroundColor: '#f9f9f9', 
-        borderRadius: 10, 
-        marginBottom: 15, 
-        padding: 15, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        width: width * 0.8, // Ajustar al 80% del ancho de la pantalla
-        height: 120, 
-    },
-    serviceName: { fontSize: 16, fontWeight: 'bold' },
-    serviceDetails: { fontSize: 14, color: '#555' },
-    scrollContainer: { paddingVertical: 10 },
+    serviceLabel: { fontSize: 18, color: '#fff', marginBottom: 10, textTransform: 'uppercase', fontWeight: 'bold' },
+    drawerItem: { backgroundColor: '#fff', marginTop: 10 },
+    selectedDrawerItem: { backgroundColor: 'green', color: 'white' },
     title: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 20, paddingTop: 10 },
 });
+
 export default ClientRequestAppointmentScreen;
