@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, FlatList, SafeAreaView, Image, Dimensions, Modal, Alert } from 'react-native';
 import { db } from '../services/Firebase';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import avatar from '../assets/avatar.png';
 import { Drawer } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
@@ -12,10 +12,10 @@ const ClientRequestAppointmentScreen = () => {
     const [selectedBarberId, setSelectedBarberId] = useState(null);
     const [selectedService, setSelectedService] = useState(null);
     const [services, setServices] = useState([]);
-    const [showAllServices, setShowAllServices] = useState(true);
     const [workingDays, setWorkingDays] = useState([]);
     const [selectedDate, setSelectedDate] = useState(null);
     const [showCalendar, setShowCalendar] = useState(false);
+    const [availableTimes, setAvailableTimes] = useState([]);
 
     useEffect(() => {
         const fetchBarbers = async () => {
@@ -60,6 +60,49 @@ const ClientRequestAppointmentScreen = () => {
         }
     };
 
+    const fetchAvailableTimes = async (barberId, selectedDate) => {
+        if (!barberId || !selectedDate) return;
+
+        try {
+            const barberDocRef = doc(db, 'peluqueros', barberId);
+            const barberDocSnapshot = await getDoc(barberDocRef);
+            const barberData = barberDocSnapshot.data();
+
+            const workHours = barberData?.horarios || []; // Obtener los horarios del peluquero
+
+            const reservedSlotsQuery = query(
+                collection(db, 'reservas'),
+                where('peluqueroId', '==', barberId),
+                where('fecha', '==', selectedDate)
+            );
+            const reservedSlotsSnapshot = await getDocs(reservedSlotsQuery);
+
+            const reservedSlots = reservedSlotsSnapshot.docs.map(doc => doc.data().hora);
+
+            const availableTimes = workHours.flatMap(hourRange => {
+                const [start, end] = hourRange.split('-');
+                const available = [];
+
+                let currentTime = new Date(`1970-01-01T${start}:00`);
+                const endTime = new Date(`1970-01-01T${end}:00`);
+
+                while (currentTime < endTime) {
+                    const timeString = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
+                    if (!reservedSlots.includes(timeString)) {
+                        available.push(timeString);
+                    }
+                    currentTime = new Date(currentTime.getTime() + 15 * 60 * 1000); // 15 minutos
+                }
+
+                return available;
+            });
+
+            setAvailableTimes(availableTimes);
+        } catch (error) {
+            console.error("Error al obtener horarios disponibles: ", error);
+        }
+    };
+
     const handleBarberSelect = async (barber) => {
         if (selectedBarber?.id === barber.id) {
             setSelectedBarber(null);
@@ -71,9 +114,8 @@ const ClientRequestAppointmentScreen = () => {
             setSelectedBarber(barber);
             setSelectedBarberId(barber.id);
             setSelectedService(null);
-            setShowAllServices(true);
-            setSelectedDate(null);
             setShowCalendar(false);
+            setAvailableTimes([]);
 
             if (barber.id) {
                 fetchServices(barber.id);
@@ -96,38 +138,14 @@ const ClientRequestAppointmentScreen = () => {
     const handleServiceSelect = (value) => {
         if (selectedService === value) {
             setSelectedService(null);
-            setShowAllServices(true);
         } else {
             setSelectedService(value);
-            setShowAllServices(false);
         }
     };
 
     const handleDateSelect = (date) => {
         setSelectedDate(date);
-    };
-
-    const servicePickerItems = services.map(service => ({
-        label: `${service.nombre} - ${service.duracion} min - ${service.precio} €`,
-        value: service.id
-    }));
-
-    const markedDates = {};
-    workingDays.forEach(day => {
-        markedDates[day] = { marked: true, dotColor: 'red' };
-    });
-
-    const renderMarkedDates = () => {
-        let dates = {};
-        workingDays.forEach(day => {
-            dates[day] = { selected: true, selectedColor: 'green' };
-        });
-
-        // Marcar el día seleccionado y el día de hoy en azul
-        dates[selectedDate] = { selected: true, selectedColor: 'blue' };
-        dates[new Date().toISOString().split('T')[0]] = { selected: true, selectedColor: 'blue' };
-
-        return dates;
+        fetchAvailableTimes(selectedBarberId, date); // Obtener los horarios disponibles para la fecha seleccionada
     };
 
     const handleSelectDateClick = () => {
@@ -165,25 +183,34 @@ const ClientRequestAppointmentScreen = () => {
                             <Text style={styles.serviceLabel}>Selecciona servicio</Text>
                             <Drawer.Section>
                                 {services.map(service => (
-                                    (showAllServices || selectedService === service.id) && (
-                                        <Drawer.Item
-                                            key={service.id}
-                                            label={`${service.nombre} - ${service.duracion} min - ${service.precio} €`}
-                                            onPress={() => handleServiceSelect(service.id)}
-                                            style={[
-                                                styles.drawerItem, 
-                                                selectedService === service.id && styles.selectedDrawerItem
-                                            ]}
-                                        />
-                                    )
+                                    <Drawer.Item
+                                        key={service.id}
+                                        label={`${service.nombre} - ${service.duracion} min - ${service.precio} €`}
+                                        onPress={() => handleServiceSelect(service.id)}
+                                        style={[
+                                            styles.drawerItem, 
+                                            selectedService === service.id && styles.selectedDrawerItem
+                                        ]}
+                                    />
                                 ))}
                             </Drawer.Section>
                         </View>
                     )}
 
+                    
+
                     {selectedService && (
                         <TouchableOpacity style={styles.selectDateButton} onPress={() => setShowCalendar(true)}>
-                            <Text style={styles.selectDateText}>Seleccionar Fecha</Text>
+                            <Text style={styles.selectDateText}>
+                                {selectedDate ? selectedDate : 'Seleccionar una Fecha'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                    
+
+                    {selectedDate && (
+                        <TouchableOpacity style={styles.selectDateButton} onPress={() => setShowCalendar(true)}>
+                            <Text style={styles.selectDateText}>Cambiar fecha</Text>
                         </TouchableOpacity>
                     )}
 
@@ -192,16 +219,24 @@ const ClientRequestAppointmentScreen = () => {
                             <View style={styles.modalOverlay}>
                                 <View style={styles.calendarContainer}>
                                     <Calendar
-                                        markedDates={renderMarkedDates()}
-                                        onDayPress={(day) => handleDateSelect(day.dateString)} // No cerramos el modal
+                                        markedDates={{ [selectedDate]: { selected: true, selectedColor: 'green' },
+                                        [new Date().toISOString().split('T')[0]]: {  // Día de hoy
+                                            selected: true, 
+                                            selectedColor: 'blue',  // El color de fondo para hoy
+                                            selectedTextColor: 'white'  // Color de texto para el día de hoy (opcional)
+                                        }
+                                    
+                                    }}
+                                        onDayPress={(day) => handleDateSelect(day.dateString)} 
                                         monthFormat={'MMMM yyyy'}
                                         theme={{
                                             selectedDayBackgroundColor: '#239432',
                                             todayTextColor: '#00adf5',
+                                            todayBackgroundColor:'blue',
                                             arrowColor: 'blue',
                                         }}
                                         locale={'es'}
-                                        firstDay={1} // Iniciar semana en lunes
+                                        firstDay={1}
                                         markingType={'simple'}
                                     />
                                     <TouchableOpacity onPress={handleSelectDateClick} style={styles.selectedDateButton}>
@@ -210,6 +245,17 @@ const ClientRequestAppointmentScreen = () => {
                                 </View>
                             </View>
                         </Modal>
+                    )}
+
+                    {selectedDate && availableTimes.length > 0 && (
+                        <View style={styles.availableTimes}>
+                            <Text style={styles.timeLabel}>Horarios disponibles:</Text>
+                            {availableTimes.map((time, index) => (
+                                <TouchableOpacity key={index} style={styles.timeSlot}>
+                                    <Text style={styles.timeText}>{time}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     )}
                 </View>
             </ImageBackground>
@@ -236,8 +282,12 @@ const styles = StyleSheet.create({
     selectDateText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
     modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
     calendarContainer: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: '80%' },
-    selectedDateButton: { marginTop: 10, padding: 10, backgroundColor: 'green', borderRadius: 5 },
-    closeText: { color: '#fff', fontWeight: 'bold' },
+    selectedDateButton: { marginTop: 20, padding: 10, backgroundColor: '#000', borderRadius: 5 },
+    closeText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    availableTimes: { marginTop: 20, width: '80%' },
+    timeLabel: { fontSize: 18, color: '#fff', marginBottom: 10 },
+    timeSlot: { padding: 10, backgroundColor: '#f4f4f4', marginBottom: 10, borderRadius: 5 },
+    timeText: { fontSize: 16, fontWeight: 'bold' },
 });
 
 export default ClientRequestAppointmentScreen;
