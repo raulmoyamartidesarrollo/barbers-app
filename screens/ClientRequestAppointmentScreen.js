@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ImageBackground, FlatList, Sa
 import { db } from '../services/Firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import avatar from '../assets/avatar.png';
-import { Drawer } from 'react-native-paper'; // Importa Drawer de react-native-paper
+import { Drawer } from 'react-native-paper';
 
 const ClientRequestAppointmentScreen = () => {
     const [barbers, setBarbers] = useState([]);
@@ -11,6 +11,7 @@ const ClientRequestAppointmentScreen = () => {
     const [selectedBarberId, setSelectedBarberId] = useState(null);
     const [selectedService, setSelectedService] = useState(null);
     const [services, setServices] = useState([]);
+    const [showAllServices, setShowAllServices] = useState(true); // Estado para mostrar u ocultar servicios
 
     useEffect(() => {
         const fetchBarbers = async () => {
@@ -62,6 +63,7 @@ const ClientRequestAppointmentScreen = () => {
             setSelectedBarber(barber);
             setSelectedBarberId(barber.id);
             setSelectedService(null);
+            setShowAllServices(true);  // Restablecer la visibilidad al seleccionar un barbero
 
             if (barber.id) {
                 fetchServices(barber.id);
@@ -82,15 +84,25 @@ const ClientRequestAppointmentScreen = () => {
     };
 
     const handleServiceSelect = (value) => {
-        console.log("Servicio seleccionado:", value);
-        setSelectedService(value);
+        if (selectedService === value) {
+            setSelectedService(null);
+            setShowAllServices(true);  // Mostrar todos los servicios si se desmarca
+        } else {
+            setSelectedService(value);
+            setShowAllServices(false);  // Ocultar todos los servicios si se marca uno
+        }
     };
+
+    const servicePickerItems = services.map(service => ({
+        label: `${service.nombre} - ${service.duracion} min - ${service.precio} €`,
+        value: service.id
+    }));
 
     return (
         <SafeAreaView style={styles.container}>
             <ImageBackground source={require('../assets/fondo_generico.png')} style={styles.background}>
                 <Text style={styles.title}>Solicitar Cita</Text>
-                
+
                 <View style={styles.selectionContainer}>
                     {/* Contenedor de peluqueros */}
                     <FlatList 
@@ -108,22 +120,24 @@ const ClientRequestAppointmentScreen = () => {
                         keyExtractor={item => item.id}
                         showsHorizontalScrollIndicator={false}
                     />
-    
+
                     {/* Contenedor de servicios */}
                     {selectedBarber && services.length > 0 && (
                         <View style={styles.serviceList}>
                             <Text style={styles.serviceLabel}>Selecciona servicio</Text>
                             <Drawer.Section>
                                 {services.map(service => (
-                                    <Drawer.Item
-                                        key={service.id}
-                                        label={`${service.nombre} - ${service.duracion} min - ${service.precio} €`}
-                                        onPress={() => handleServiceSelect(service.id)}
-                                        style={[
-                                            styles.drawerItem, 
-                                            selectedService === service.id && styles.selectedDrawerItem
-                                        ]}
-                                    />
+                                    (showAllServices || selectedService === service.id) && (
+                                        <Drawer.Item
+                                            key={service.id}
+                                            label={`${service.nombre} - ${service.duracion} min - ${service.precio} €`}
+                                            onPress={() => handleServiceSelect(service.id)}
+                                            style={[
+                                                styles.drawerItem, 
+                                                selectedService === service.id && styles.selectedDrawerItem
+                                            ]}
+                                        />
+                                    )
                                 ))}
                             </Drawer.Section>
                         </View>
@@ -145,9 +159,9 @@ const styles = StyleSheet.create({
     selectedCard: { borderColor: 'green', borderWidth: 5 },
     selectionContainer: { alignItems: 'center', width: '100%' },
     serviceList: { marginTop: 20, width: '80%' },
-    serviceLabel: { fontSize: 18, color: '#fff', marginBottom: 10, textTransform: 'uppercase', fontWeight: 'bold' },
-    drawerItem: { backgroundColor: '#fff', marginTop: 10 },
-    selectedDrawerItem: { backgroundColor: 'green', color: 'white' },
+    serviceLabel: { fontSize: 18, color: '#fff', marginBottom: 10, textTransform: 'uppercase',fontWeight: 'bold' },
+    drawerItem: { marginTop: 10 },
+    selectedDrawerItem: { backgroundColor: '#ddd' }, // Ejemplo de cómo estilizar el ítem seleccionado
     title: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 20, paddingTop: 10 },
 });
 
