@@ -68,7 +68,7 @@ const ClientServicesScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
   <Icon name="arrow-left" size={20} color="black" />
-  <Text style={styles.backButtonText}> Volver</Text>
+  <Text style={styles.backButtonText}> Volver Atrás</Text>
 </TouchableOpacity>
       </ImageBackground>
     </SafeAreaView>

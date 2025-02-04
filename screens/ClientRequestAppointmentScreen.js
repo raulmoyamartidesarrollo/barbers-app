@@ -5,8 +5,9 @@ import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firesto
 import avatar from '../assets/avatar.png';
 import { Drawer } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
-const ClientRequestAppointmentScreen = () => {
+const ClientRequestAppointmentScreen = ({ navigation }) => {
     const [barbers, setBarbers] = useState([]);
     const [selectedBarber, setSelectedBarber] = useState(null);
     const [selectedBarberId, setSelectedBarberId] = useState(null);
@@ -59,33 +60,38 @@ const ClientRequestAppointmentScreen = () => {
             console.error("Error al obtener los servicios: ", error);
         }
     };
+    const handleGoBack = () => {
+        navigation.navigate('HomeScreenClient');
+    };
 
     const fetchAvailableTimes = async (barberId, selectedDate) => {
         if (!barberId || !selectedDate) return;
-
+    
         try {
             const barberDocRef = doc(db, 'peluqueros', barberId);
             const barberDocSnapshot = await getDoc(barberDocRef);
             const barberData = barberDocSnapshot.data();
-
-            const workHours = barberData?.horarios || []; // Obtener los horarios del peluquero
-
+    
+            // Verificar que barberData?.horarios sea un array
+            const workHours = Array.isArray(barberData?.horarios) ? barberData?.horarios : [];
+    
             const reservedSlotsQuery = query(
                 collection(db, 'reservas'),
                 where('peluqueroId', '==', barberId),
                 where('fecha', '==', selectedDate)
             );
             const reservedSlotsSnapshot = await getDocs(reservedSlotsQuery);
-
+    
             const reservedSlots = reservedSlotsSnapshot.docs.map(doc => doc.data().hora);
-
+    
+            // Usar flatMap solo si workHours es un array
             const availableTimes = workHours.flatMap(hourRange => {
                 const [start, end] = hourRange.split('-');
                 const available = [];
-
+    
                 let currentTime = new Date(`1970-01-01T${start}:00`);
                 const endTime = new Date(`1970-01-01T${end}:00`);
-
+    
                 while (currentTime < endTime) {
                     const timeString = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
                     if (!reservedSlots.includes(timeString)) {
@@ -93,16 +99,15 @@ const ClientRequestAppointmentScreen = () => {
                     }
                     currentTime = new Date(currentTime.getTime() + 15 * 60 * 1000); // 15 minutos
                 }
-
+    
                 return available;
             });
-
+    
             setAvailableTimes(availableTimes);
         } catch (error) {
             console.error("Error al obtener horarios disponibles: ", error);
         }
     };
-
     const handleBarberSelect = async (barber) => {
         if (selectedBarber?.id === barber.id) {
             setSelectedBarber(null);
@@ -258,6 +263,10 @@ const ClientRequestAppointmentScreen = () => {
                         </View>
                     )}
                 </View>
+               <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                 <Icon name="arrow-left" size={20} color="black" />
+                 <Text style={styles.backButtonText}> Volver Atrás</Text>
+               </TouchableOpacity>
             </ImageBackground>
         </SafeAreaView>
     );
@@ -267,6 +276,8 @@ const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
     background: { alignItems: 'center', height, justifyContent: 'flex-start', width },
+    backButton: { position: 'absolute', bottom:80, backgroundColor: 'black', padding: 15, borderRadius: 10, width: '90%', alignItems: 'center' },
+    backButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
     card: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, height: 150, justifyContent: 'center', padding: 5, width: 120 },
     container: { flex: 1, justifyContent: 'flex-start' },
     image: { borderRadius: 40, height: 80, resizeMode: 'cover', width: 80 },
