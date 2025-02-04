@@ -4,7 +4,7 @@ import { db } from '../services/Firebase';
 import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import avatar from '../assets/avatar.png';
 import { Drawer } from 'react-native-paper';
-import { Calendar } from 'react-native-calendars';
+import { LocaleConfig, Calendar } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ClientRequestAppointmentScreen = ({ navigation }) => {
@@ -219,37 +219,47 @@ const ClientRequestAppointmentScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     )}
 
+
+               
+
                     {showCalendar && (
                         <Modal visible={showCalendar} transparent={true} animationType="slide">
-                            <View style={styles.modalOverlay}>
-                                <View style={styles.calendarContainer}>
-                                    <Calendar
-                                        markedDates={{ [selectedDate]: { selected: true, selectedColor: 'green' },
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.calendarContainer}>
+                                <Calendar
+                                    minDate={new Date().toISOString().split('T')[0]} // Establecer minDate al día actual
+                                    markedDates={{ 
+                                        [selectedDate]: { selected: true, selectedColor: 'green' },
                                         [new Date().toISOString().split('T')[0]]: {  // Día de hoy
                                             selected: true, 
-                                            selectedColor: 'blue',  // El color de fondo para hoy
+                                            selectedColor: 'blue',  // Color de fondo para hoy
                                             selectedTextColor: 'white'  // Color de texto para el día de hoy (opcional)
                                         }
-                                    
                                     }}
-                                        onDayPress={(day) => handleDateSelect(day.dateString)} 
-                                        monthFormat={'MMMM yyyy'}
-                                        theme={{
-                                            selectedDayBackgroundColor: '#239432',
-                                            todayTextColor: '#00adf5',
-                                            todayBackgroundColor:'blue',
-                                            arrowColor: 'blue',
-                                        }}
-                                        locale={'es'}
-                                        firstDay={1}
-                                        markingType={'simple'}
-                                    />
-                                    <TouchableOpacity onPress={handleSelectDateClick} style={styles.selectedDateButton}>
-                                        <Text style={styles.closeText}>Seleccionar fecha</Text>
-                                    </TouchableOpacity>
-                                </View>
+                                    onDayPress={(day) => handleDateSelect(day.dateString)}
+                                    monthFormat={'MMMM yyyy'}
+                                    theme={{
+                                        selectedDayBackgroundColor: '#239432',
+                                        todayTextColor: '#00adf5',
+                                        todayBackgroundColor: 'blue',
+                                        arrowColor: 'blue',
+                                        textSectionTitleColor: '#000', // Color del texto de los días de la semana
+                                        dayTextColor: '#000',
+                                        textDisabledColor: '#d9e1e8',
+                                    }}
+                                    locale={'es'}
+                                    firstDay={1}
+                                    markingType={'simple'}
+                                    enableSwipeMonths={true}
+                                    hideExtraDays={true}
+                                    dayNamesShort={['D', 'L', 'M', 'X', 'J', 'V', 'S']} // Días de la semana en español con iniciales
+                                />
+                                <TouchableOpacity onPress={handleSelectDateClick} style={styles.selectedDateButton}>
+                                    <Text style={styles.closeText}>Seleccionar fecha</Text>
+                                </TouchableOpacity>
                             </View>
-                        </Modal>
+                        </View>
+                    </Modal>
                     )}
 
                     {selectedDate && availableTimes.length > 0 && (
