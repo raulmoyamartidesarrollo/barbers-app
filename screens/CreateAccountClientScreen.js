@@ -5,6 +5,7 @@ import { auth, db, firestore } from '../services/Firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import colors from '../services/colors';
+import * as Google from 'expo-auth-session/providers/google';
 
 const CreateAccountClientScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
