@@ -9,6 +9,7 @@ import { useUser } from '../services/UserContext';
 
 export default function HomeScreenClient() {
     const navigation = useNavigation();
+    const { setUserId } = useUser();
 
     const lastBooking = {
         date: '2024-10-15',
@@ -42,13 +43,18 @@ export default function HomeScreenClient() {
                 { text: 'Cancelar', style: 'cancel' },
                 {
                     text: 'Confirmar',
-                    onPress: () => {
-                        signOut(auth).then(() => {
+                    onPress: async () => {
+                        try {
+                            await signOut(auth);
                             console.log('Sesión cerrada');
-                            navigation.navigate('Login');
-                        }).catch((error) => {
+                            setUserId(null);
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Login' }],
+                            });
+                        } catch (error) {
                             console.error('Error al cerrar sesión:', error);
-                        });
+                        }
                     },
                 },
             ],
@@ -137,9 +143,9 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     card: {
-        width: '80%', // Ocupa el 80% del ancho disponible
-        marginLeft: '10%', // Margen izquierdo del 10%
-        marginRight: '10%', // Margen derecho del 10%
+        width: '80%',
+        marginLeft: '10%',
+        marginRight: '10%',
         padding: 20,
         backgroundColor: 'rgba(169, 169, 169, 0.8)',
         borderRadius: 15,
@@ -181,23 +187,24 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     logoutOption: {
-        width: '80%', // Ocupa el 80% del ancho
-        marginLeft: '10%', // Margen izquierdo del 10%
-        marginRight: '10%', // Margen derecho del 10%
-        flexDirection: 'row', // Alineación horizontal
-        justifyContent: 'center', // Centrar contenido
-        alignItems: 'center', // Centrar verticalmente
+        width: '80%',
+        marginLeft: '10%',
+        marginRight: '10%',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
         padding: 15,
-        backgroundColor: '#fff',
+        backgroundColor: 'black', // Fondo negro
         borderRadius: 55,
         elevation: 3,
     },
     logoutText: {
-        color: '#000',
+        color: 'white', // Texto blanco
+        fontSize: 16,
     },
     logoutIcon: {
-        marginLeft: 20, // Separación de 5 entre el texto y el icono
-        color: '#000',
+        marginLeft: 10,
+        color: 'white',
     },
     editOption: {
         flexDirection: 'row',
@@ -214,4 +221,3 @@ const styles = StyleSheet.create({
         marginLeft: 5,
     },
 });
-
